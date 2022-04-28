@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace FishGame
 {
@@ -22,11 +23,12 @@ namespace FishGame
 
         // Data av olika slag
         List<Fish> _currentFishies = new List<Fish>(); // Lista med de nuvarande inladdade fiskarna i spelet
-        FishData[] _gameFishies;
+        List<FishData> _gameFishies;
         Fisherman _fisherman;
         FishingRod _fishingRod;
         int _score; // Användarens aktuella poäng
-        int _depth; // Hur djupt fiskespöet har gått.
+        float _depth; // Hur djupt fiskespöet har gått.
+        int _maxDepth; // Hur djupt användaren max kan gå ner
 
         // Texturer
         private Texture2D _fishermanImage;
@@ -47,49 +49,57 @@ namespace FishGame
         protected override void Initialize()
         {
             // Nedan följer en lista med alla fiskar som finns i spelet och deras standarddata.
-            _gameFishies = new FishData[]
+            _gameFishies = new List<FishData>()
             {
                 new FishData(
                     name: "Blå Fisk",
                     associatedAssetName: "blue_fishie",
                     rarity: 1,
                     value: 1,
-                    defaultSpeed: 5
+                    defaultSpeed: 5,
+                    minSpawnDepth: 0
                 ),
                 new FishData(
                     name: "Grön Fisk",
                     associatedAssetName: "green_fishie",
                     rarity: 1,
                     value: 1,
-                    defaultSpeed: 5
+                    defaultSpeed: 5,
+                    minSpawnDepth: 0
                 ),
                 new FishData(
                     name: "Röd Fisk",
                     associatedAssetName: "red_fishie",
                     rarity: 1,
                     value: 1,
-                    defaultSpeed: 5
+                    defaultSpeed: 5,
+                    minSpawnDepth: 0
+
                 ),
                 new FishData(
                     name: "Stor Fisk",
                     associatedAssetName: "big_fishie",
                     rarity: 2,
                     value: 10,
-                    defaultSpeed: 8
+                    defaultSpeed: 8,
+                    minSpawnDepth: 10
                 ),
                 new FishData(
                     name: "Lila Fisk",
                     associatedAssetName: "purple_blurple",
                     rarity: 2,
                     value: 3,
-                    defaultSpeed: 10
+                    defaultSpeed: 10,
+                    minSpawnDepth: 0
                 ),
                 new FishData(
                     name: "Guldig Sällsynt Fisk",
                     associatedAssetName: "golden_fancy_fish",
                     rarity: 5,
                     value: 20,
-                    defaultSpeed: 20
+                    defaultSpeed: 20,
+                    minSpawnDepth: 0
+
                 ),
             };
             // Nedan följer detsamma, fast för skräp
@@ -104,9 +114,17 @@ namespace FishGame
             };
             // Initiera också fiskaren
             _fisherman = new Fisherman();
+            // ... fiskespöet...
+            _fishingRod = new FishingRod(new Vector2(0,0),
+            1,
+            1,
+            "fishing-rod-placeholder",
+            Content
+                );
             //...och ställ in djupet samt andra variabler
             _depth = 0;
             _score = 0;
+            _maxDepth = 10;
             base.Initialize();
         }
 
@@ -136,10 +154,56 @@ namespace FishGame
 
             if (_state == GameState.FishCatchingScreen)
             {
-                if (Keyboard.GetState().IsKeyDown(Keys.Up)) { }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Down)) { }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Right)) { }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Left)) { }
+                if (Keyboard.GetState().IsKeyDown(Keys.Up)) {
+                // Flytta metspöet upp om vi kan det
+                if (_depth > 0)
+                    {
+                        if (_depth - _fishingRod.Speed <= 0) {
+                            _depth = 0;
+                        }
+                        else
+                        {
+
+                        _depth -= _fishingRod.Speed;
+                        }
+                        _fishingRod.Position = new Vector2(_fishingRod.Position.X + _fishingRod.SpeedX, _fishingRod.Position.Y);
+
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Y-gräns för metspöet uppåt är nådd.");
+                    }
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.Down)) {
+                    // Flytta metspöet nedåt om vi kan det
+                    if (_depth + _fishingRod.Speed < _maxDepth )
+                    {
+                        _depth += _fishingRod.Speed;
+                        _fishingRod.Position = new Vector2(_fishingRod.Position.X, _fishingRod.Position.Y + _fishingRod.Speed);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Y-gräns för metspöet nedåt är nådd.");
+                    }
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.Right)) {
+                    // Flytta metspöet åt höger om vi kan det
+                    if (_fishingRod.Position.X + _fishingRod.AssociatedAsset.Width <= _graphics.PreferredBackBufferWidth) { 
+                        _fishingRod.Position = new Vector2(_fishingRod.Position.X + _fishingRod.SpeedX, _fishingRod.Position.Y);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("X-gräns för metspöet (höger) är nådd.");
+                    }
+
+                }
+                else if (Keyboard.GetState().IsKeyDown(Keys.Left)) { // Flytta metspöet åt vänster om vi kan det
+                if (_fishingRod.Position.X - _fishingRod.AssociatedAsset.Width >= 0) {
+                    _fishingRod.Position = new Vector2(_fishingRod.Position.X - _fishingRod.SpeedX, _fishingRod.Position.Y);
+                }
+                else {
+                    Debug.WriteLine("X-gräns för metspöet (vänster) är nådd.");
+                }}
             }
 
             base.Update(gameTime);
@@ -149,7 +213,14 @@ namespace FishGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             _spriteBatch.Begin();
-            if (_state == GameState.IdleScreen)
+            if (_state == GameState.TitleScreen)
+            {
+                // Kod för titelskärmen
+                // Rita ut de objekt som ska vara på titelskärmen
+
+
+            }
+            else if (_state == GameState.IdleScreen)
             {
                 // Ladda in fiskaren
                 // Hämta nästa bild i animationen om vi just nu animerar
@@ -190,12 +261,14 @@ namespace FishGame
             }
             else if (_state == GameState.FishCatchingScreen)
             {
-                // Ladda in fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
+                // Rita ut fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
+                // Kontrollera vilka fiskar som är möjliga för det djupet vi har
+                List<FishData> _possibleFishes = _gameFishies.Where(fish => fish.IsAvailableAt(_depth)).ToList();
                 int fishesToCreate = 15 - _currentFishies.Count;
                 for (int i = 0; i < fishesToCreate; i++)
                 {
                     Debug.WriteLine($"Skapar en ny fisk... ({i + 1}/{fishesToCreate})");
-                    FishData newFishData = _gameFishies[_random.Next(0, _gameFishies.Length - 1)];
+                    FishData newFishData = _possibleFishes[_random.Next(0, _possibleFishes.Count - 1)];
                     Fish newFish = new Fish(
                         new Vector2(
                             _graphics.PreferredBackBufferWidth,
@@ -224,9 +297,10 @@ namespace FishGame
                         _spriteBatch.Draw(fish.AssociatedAsset, nextFishPos, Color.White);
                     }
                 }
-                // Rita ut kroken/metspöet
-
                 _currentFishies = _tempCurrentFishies; // Uppdatera lista från temporär lista
+
+                // Rita ut kroken/metspöet/fiskespöet
+                _spriteBatch.Draw(_fishingRod.AssociatedAsset, _fishingRod.Position, Color.White);
             }
             _spriteBatch.End();
 

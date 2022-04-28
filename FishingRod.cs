@@ -13,15 +13,19 @@ namespace FishGame
         public FishingRod(
             Vector2 position,
             int speed,
+            int speedX,
             string associatedAssetName,
             ContentManager contentLoader
         )
         {
             Position = position;
             Speed = speed;
+            SpeedX = speedX; // Hastighet i X-led.
             AssociatedAsset = contentLoader.Load<Texture2D>(associatedAssetName);
             IsFish = false;
             HasBeenCollidedWith = false;
         }
+
+        public int SpeedX { get; }
     }
 }
