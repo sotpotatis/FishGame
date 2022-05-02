@@ -11,7 +11,9 @@ namespace FishGame
     enum GameState
     { // Innehåller olika händelser i spelet som påverkar vad som visas på skärmen.
         TitleScreen, // Titelskärmen på spelet
+        HelpScreen, // Skärmen man kan använda för att få hjälp om spelet
         IdleScreen, // Skärmen som visas när man inte fångar fiskar
+        IdleScreenAnimating, // Skärmen som visas när fiskespöet kastas ut
         FishCatchingScreen // Skärmen som visas när man fångar fiskar
     };
 
@@ -34,10 +36,13 @@ namespace FishGame
         // Texturer
         private Texture2D _fishermanImage;
         private List<Texture2D> _fishermanImages;
-        const int FisherManAnimationsCount = 5; // Varje animationsframe för fiskaren slutar på ett numer
+        const int FisherManAnimationsCount = 5; // Varje animationsframe för fiskaren slutar på ett nummer. Denna variabel används för att styra hur många animationsrutor "frames" som ska laddas in i spelet.
         private SpriteFont _mainFont; // Standardfontet att använda
-        Random _random = new Random();
 
+        // Övrigt
+        Random _random = new Random();
+        MouseState _previousMouseState;
+        Dictionary<string,Button> _gameButtons; // Knappar som spelet innehåller.
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -127,6 +132,12 @@ namespace FishGame
             _score = 0;
             _maxDepth = 500;
             base.Initialize();
+            //...lite knappar i spelet...
+            _gameButtons = new Dictionary<string, Button>()
+            {
+                ["play"] = new Button("playButton", Content, new Vector2(200, 200), GameState.TitleScreen),
+                ["help"] = new Button("helpButton", Content, new Vector2(200, 300), GameState.TitleScreen),
+            };
         }
 
         protected override void LoadContent()
@@ -154,7 +165,28 @@ namespace FishGame
             )
                 Exit();
 
-            if (_state == GameState.FishCatchingScreen && !_fishingRod.HasBeenCollidedWith)
+            MouseState _mouseState = Mouse.GetState();
+            if (_state == GameState.TitleScreen)
+            {
+                // Kontrollera om någon av titelskärmens knappar har klickats på
+                if (_gameButtons["play"].IsClicked(_mouseState, _previousMouseState))
+                { // Byt från titelskärmen till spelskärmen
+                    _state = GameState.IdleScreen;
+                }
+                else if (_gameButtons["help"].IsClicked(_mouseState, _previousMouseState))
+                { // Byt från titelskärmen till hjälpskärmen
+                    _state = GameState.HelpScreen;
+                }
+            }
+            else if (_state == GameState.IdleScreen)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                {
+                    // Man kastar ut fiskespöet genom att klicka på mellanslag
+                    _state = GameState.IdleScreenAnimating;
+                }
+            }
+            else if (_state == GameState.FishCatchingScreen && !_fishingRod.HasBeenCollidedWith)
             {
                 if (Keyboard.GetState().IsKeyDown(Keys.Up)) {
                 // Flytta metspöet upp om vi kan det
@@ -215,6 +247,14 @@ namespace FishGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             _spriteBatch.Begin();
+            // Rita ut alla knappar. Dessa sköts av min egna knapphanterare - magiskt va?
+            foreach (Button button in _gameButtons.Values)
+            {
+                if (button.ActiveOnScreen == _state)
+                { //Om knappen ska visas på den aktuella skärmen, rita ut den
+                    _spriteBatch.Draw(button.ActiveAsset, button.Position, Color.White);
+                }
+            }
             if (_state == GameState.TitleScreen)
             {
                 // Kod för titelskärmen
@@ -223,6 +263,24 @@ namespace FishGame
 
             }
             else if (_state == GameState.IdleScreen)
+            {
+                // Visa bilden på fiskaren
+                _spriteBatch.Draw(
+                            _fishermanImage,
+                            new Vector2(0, 0),
+                            null,
+                            Color.White,
+                            0,
+                            new Vector2(0, 0),
+                            1.5f,
+                            SpriteEffects.None,
+                            0
+                        );
+                // Lägg till en instruerande text
+                _spriteBatch.DrawString(_mainFont, "Tryck på SPACE för att fånga fisk", new Vector2(200, 300), Color.White);
+                // TODO: Lägg till statistiktext etc.
+            }
+            else if (_state == GameState.IdleScreenAnimating)
             {
                 // Ladda in fiskaren
                 // Hämta nästa bild i animationen om vi just nu animerar

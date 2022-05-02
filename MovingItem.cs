@@ -54,7 +54,7 @@ namespace FishGame
             return Position;
         }
         /// <summary>
-        /// Hämtar en rektangel för bildobjektet kopplat till föremålet. Kan med förde användas till kollisionshantering etc.
+        /// Hämtar en rektangel för bildobjektet kopplat till föremålet. Kan med fördel användas till kollisionshantering etc.
         /// </summary>
         /// <returns></returns>
         public Rectangle getAssociatedRectangle()
