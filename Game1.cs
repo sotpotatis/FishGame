@@ -31,7 +31,6 @@ namespace FishGame
         int _score; // Användarens aktuella poäng
         float _depth; // Hur djupt fiskespöet har gått.
         int _maxDepth; // Hur djupt användaren max kan gå ner
-        const float DepthToMetersFactor = 1; // Divisionsvärde för att konvertera _depth (som är i pixlar) till meter.
 
         // Texturer
         private Texture2D _fishermanImage;
@@ -42,14 +41,17 @@ namespace FishGame
         // Övrigt
         Random _random = new Random();
         MouseState _previousMouseState;
-        Dictionary<string,Button> _gameButtons; // Knappar som spelet innehåller.
+        Dictionary<string, Button> _gameButtons; // Knappar som spelet innehåller.
+        double _timeSinceLastAnimation;
+        double fishingRodCooldown;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             // _graphics.IsFullScreen = true; // Specificera att spelet ska köras i fullskärm
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            _state = GameState.IdleScreen;
+            _state = GameState.FishCatchingScreen;
         }
 
         protected override void Initialize()
@@ -80,7 +82,6 @@ namespace FishGame
                     value: 1,
                     defaultSpeed: 5,
                     minSpawnDepth: 0
-
                 ),
                 new FishData(
                     name: "Stor Fisk",
@@ -105,7 +106,6 @@ namespace FishGame
                     value: 20,
                     defaultSpeed: 20,
                     minSpawnDepth: 0
-
                 ),
             };
             // Nedan följer detsamma, fast för skräp
@@ -121,22 +121,36 @@ namespace FishGame
             // Initiera också fiskaren
             _fisherman = new Fisherman();
             // ... fiskespöet...
-            _fishingRod = new FishingRod(new Vector2(0,0),
-            5,
-            10,
-            "fishing-rod-placeholder",
-            Content
-                );
+            _fishingRod = new FishingRod(
+                new Vector2(0, 0),
+                5,
+                10,
+                2000,
+                "fishing-rod-placeholder",
+                Content
+            );
             //...och ställ in djupet samt andra variabler
             _depth = 0;
             _score = 0;
             _maxDepth = 500;
+            _timeSinceLastAnimation = 0;
             base.Initialize();
             //...lite knappar i spelet...
+
             _gameButtons = new Dictionary<string, Button>()
             {
-                ["play"] = new Button("playButton", Content, new Vector2(200, 200), GameState.TitleScreen),
-                ["help"] = new Button("helpButton", Content, new Vector2(200, 300), GameState.TitleScreen),
+                ["play"] = new Button(
+                    "button-start",
+                    Content,
+                    new Vector2(200, 200),
+                    GameState.TitleScreen
+                ),
+                ["help"] = new Button(
+                    "button-help",
+                    Content,
+                    new Vector2(200, 300),
+                    GameState.TitleScreen
+                ),
             };
         }
 
@@ -158,14 +172,33 @@ namespace FishGame
 
         protected override void Update(GameTime gameTime)
         {
-            // Hantera och möjliggör att stoppa spelet samt att flytta på fiskespöet.
+            // Hantera och möjliggör att stoppa spelet
             if (
                 GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
                 || Keyboard.GetState().IsKeyDown(Keys.Escape)
             )
+            {
                 Exit();
+            }
 
             MouseState _mouseState = Mouse.GetState();
+            // Uppdatera alla knappars bilder baserade på om musen är över de eller inte (detta händer endast i minnet, relevanta knappar ritas ut under Draw)
+            Dictionary<string, Button> _tempGameButtons = new Dictionary<string, Button>(
+                _gameButtons
+            ); // Skapa temporär dictionary
+            foreach (KeyValuePair<string, Button> gameButton in _gameButtons)
+            {
+                if (gameButton.Value.ActiveOnScreen == _state)
+                {
+                    gameButton.Value.ActiveAsset = gameButton.Value.GetActiveAsset(
+                        _mouseState,
+                        _previousMouseState
+                    );
+                    _tempGameButtons[gameButton.Key] = gameButton.Value;
+                }
+            }
+            _gameButtons = _tempGameButtons;
+
             if (_state == GameState.TitleScreen)
             {
                 // Kontrollera om någon av titelskärmens knappar har klickats på
@@ -186,60 +219,101 @@ namespace FishGame
                     _state = GameState.IdleScreenAnimating;
                 }
             }
-            else if (_state == GameState.FishCatchingScreen && !_fishingRod.HasBeenCollidedWith)
+            else if (_state == GameState.FishCatchingScreen)
             {
-                if (Keyboard.GetState().IsKeyDown(Keys.Up)) {
-                // Flytta metspöet upp om vi kan det
-                if (_depth > 0)
+                Debug.WriteLine($"{gameTime.TotalGameTime.TotalMilliseconds} har passerat");
+                if (!_fishingRod.HasBeenCollidedWith)
+                {
+                    if (Keyboard.GetState().IsKeyDown(Keys.Up))
                     {
-                        if (_depth - _fishingRod.Speed <= 0) {
-                            _depth = 0;
+                        // Flytta metspöet upp om vi kan det
+                        if (_depth > 0)
+                        {
+                            if (_depth - _fishingRod.Speed <= 0)
+                            {
+                                _depth = 0;
+                            }
+                            else
+                            {
+                                _depth -= _fishingRod.Speed;
+                            }
                         }
                         else
                         {
-
-                        _depth -= _fishingRod.Speed;
-                        _fishingRod.Position = new Vector2(_fishingRod.Position.X, _fishingRod.Position.Y-_fishingRod.Speed);
+                            Debug.WriteLine("Y-gräns för metspöet uppåt är nådd.");
                         }
-
                     }
-                    else
+                    else if (Keyboard.GetState().IsKeyDown(Keys.Down))
                     {
-                        Debug.WriteLine("Y-gräns för metspöet uppåt är nådd.");
+                        // Flytta metspöet nedåt om vi kan det
+                        if (_depth + _fishingRod.Speed < _maxDepth)
+                        {
+                            _depth += _fishingRod.Speed;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Y-gräns för metspöet nedåt är nådd.");
+                        }
+                    }
+                    else if (Keyboard.GetState().IsKeyDown(Keys.Right))
+                    {
+                        // Flytta metspöet åt höger om vi kan det
+                        if (
+                            _fishingRod.Position.X + _fishingRod.AssociatedAsset.Width
+                            <= _graphics.PreferredBackBufferWidth
+                        )
+                        {
+                            _fishingRod.Position = new Vector2(
+                                _fishingRod.Position.X + _fishingRod.SpeedX,
+                                _fishingRod.Position.Y
+                            );
+                        }
+                        else
+                        {
+                            Debug.WriteLine("X-gräns för metspöet (höger) är nådd.");
+                        }
+                    }
+                    else if (Keyboard.GetState().IsKeyDown(Keys.Left))
+                    { // Flytta metspöet åt vänster om vi kan det
+                        if (_fishingRod.Position.X - _fishingRod.AssociatedAsset.Width >= 0)
+                        {
+                            _fishingRod.Position = new Vector2(
+                                _fishingRod.Position.X - _fishingRod.SpeedX,
+                                _fishingRod.Position.Y
+                            );
+                        }
+                        else
+                        {
+                            Debug.WriteLine("X-gräns för metspöet (vänster) är nådd.");
+                        }
                     }
                 }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Down)) {
-                    // Flytta metspöet nedåt om vi kan det
-                    if (_depth + _fishingRod.Speed < _maxDepth )
+                else
+                {
+                    // Hantera uppfiskning. Om fisken har fiskats upp så vill vi att fiskespöet ska vara tillgänglig till att fånga mer fisk
+                    if (_fishingRod.HasBeenCollidedWith)
                     {
-                        _depth += _fishingRod.Speed;
-                        _fishingRod.Position = new Vector2(_fishingRod.Position.X, _fishingRod.Position.Y + _fishingRod.Speed);
-                    }
-                    else
-                    {
-                        Debug.WriteLine("Y-gräns för metspöet nedåt är nådd.");
+                        if (fishingRodCooldown == 0)
+                        { // Värdet är 0 när cooldownen inte har startat än. Det återställs av koden när kollisionen inleds
+                            fishingRodCooldown = gameTime.TotalGameTime.TotalMilliseconds;
+                        }
+                        if (
+                            _fishingRod.Cooldown
+                            <= (gameTime.TotalGameTime.TotalMilliseconds - fishingRodCooldown)
+                        )
+                        {
+                            Debug.WriteLine("Återställer fiskespö...");
+                            _fishingRod.HasBeenCollidedWith = false;
+                        }
+                        else
+                        {
+                            Debug.WriteLine(
+                                $"Fiskespöet är fortfarande på cooldown... {fishingRodCooldown}/{_fishingRod.Cooldown} millisekunder."
+                            );
+                        }
                     }
                 }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Right)) {
-                    // Flytta metspöet åt höger om vi kan det
-                    if (_fishingRod.Position.X + _fishingRod.AssociatedAsset.Width <= _graphics.PreferredBackBufferWidth) { 
-                        _fishingRod.Position = new Vector2(_fishingRod.Position.X + _fishingRod.SpeedX, _fishingRod.Position.Y);
-                    }
-                    else
-                    {
-                        Debug.WriteLine("X-gräns för metspöet (höger) är nådd.");
-                    }
-
-                }
-                else if (Keyboard.GetState().IsKeyDown(Keys.Left)) { // Flytta metspöet åt vänster om vi kan det
-                if (_fishingRod.Position.X - _fishingRod.AssociatedAsset.Width >= 0) {
-                    _fishingRod.Position = new Vector2(_fishingRod.Position.X - _fishingRod.SpeedX, _fishingRod.Position.Y);
-                }
-                else {
-                    Debug.WriteLine("X-gräns för metspöet (vänster) är nådd.");
-                }}
             }
-
             base.Update(gameTime);
         }
 
@@ -266,78 +340,87 @@ namespace FishGame
             {
                 // Visa bilden på fiskaren
                 _spriteBatch.Draw(
-                            _fishermanImage,
-                            new Vector2(0, 0),
-                            null,
-                            Color.White,
-                            0,
-                            new Vector2(0, 0),
-                            1.5f,
-                            SpriteEffects.None,
-                            0
-                        );
+                    _fishermanImage,
+                    new Vector2(0, 0),
+                    null,
+                    Color.White,
+                    0,
+                    new Vector2(0, 0),
+                    1.5f,
+                    SpriteEffects.None,
+                    0
+                );
                 // Lägg till en instruerande text
-                _spriteBatch.DrawString(_mainFont, "Tryck på SPACE för att fånga fisk", new Vector2(200, 300), Color.White);
+                _spriteBatch.DrawString(
+                    _mainFont,
+                    "Tryck på SPACE för att fånga fisk",
+                    new Vector2(
+                        _graphics.PreferredBackBufferWidth
+                            - _mainFont.MeasureString("Tryck på SPACE för att fånga fisk").X / 2,
+                        300
+                    ),
+                    Color.White
+                );
                 // TODO: Lägg till statistiktext etc.
             }
             else if (_state == GameState.IdleScreenAnimating)
             {
                 // Ladda in fiskaren
                 // Hämta nästa bild i animationen om vi just nu animerar
-                int _fishermanImageIndex = _fishermanImages.IndexOf(_fishermanImage) + 1;
-                if (_fishermanImageIndex + 1 < _fishermanImages.Count)
+                int _fishermanImageIndex = _fishermanImages.IndexOf(_fishermanImage);
+                if (gameTime.TotalGameTime.TotalMilliseconds - _timeSinceLastAnimation > 2000)
                 {
-                    if (Math.Round(gameTime.TotalGameTime.TotalMilliseconds) % 1000 == 0)
-                    { // Byt endast animationen varannan sekund
-                        _fishermanImageIndex += 1;
-                        _fishermanImage = _fishermanImages[_fishermanImageIndex];
-                        _spriteBatch.Draw(
-                            _fishermanImage,
-                            new Vector2(0, 0),
-                            null,
-                            Color.White,
-                            0,
-                            new Vector2(0, 0),
-                            1.5f,
-                            SpriteEffects.None,
-                            0
-                        );
-                    }
-                }
-                else
-                { // Om vi har animerat klart, flytta upp fiskaren och byt sedan skärm
-                    if (_fisherman.Position.Y - _fisherman.Asset.Height <= 0)
+                    if (_fishermanImageIndex + 1 < _fishermanImages.Count)
                     {
-                        _state = GameState.FishCatchingScreen; // Byt skärm om vi har animerat klart
+                        _fishermanImageIndex += 1;
                     }
                     else
-                    { // Flytta upp fiskaren ut från skärmen
-                        _fisherman.Position = new Vector2(
-                            _fisherman.Position.X,
-                            _fisherman.Position.Y - 1
-                        );
+                    { // Om vi har animerat klart, byt sedan skärm
+                        _state = GameState.FishCatchingScreen; // Byt skärm om vi har animerat klart
                     }
                 }
+                _fishermanImage = _fishermanImages[_fishermanImageIndex];
+                _spriteBatch.Draw(
+                    _fishermanImage,
+                    new Vector2(0, 0),
+                    null,
+                    Color.White,
+                    0,
+                    new Vector2(0, 0),
+                    1.5f,
+                    SpriteEffects.None,
+                    0
+                );
+                _timeSinceLastAnimation = gameTime.TotalGameTime.TotalMilliseconds;
             }
             else if (_state == GameState.FishCatchingScreen)
             {
                 // Generera bakgrundsfärg baserat på djup
-                Color currentBackgroúndColor = new Color(new Vector3(143, 180, 255));
-                GraphicsDevice.Clear(currentBackgroúndColor);
+                Color currentBackgroundColor = Color.DarkBlue; //new Color(new Vector3(143, 180, 255));
+                GraphicsDevice.Clear(currentBackgroundColor);
                 // Rita ut fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
                 // Kontrollera vilka fiskar som är möjliga för det djupet vi har
-                List<FishData> _possibleFishes = _gameFishies.Where(fish => fish.IsAvailableAt(_depth)).ToList();
+                List<FishData> _possibleFishes = _gameFishies
+                    .Where(fish => fish.IsAvailableAt(getDepthInMetres()))
+                    .ToList();
                 Debug.WriteLine($"{_possibleFishes.Count} fiskar tillgängliga");
                 int fishesToCreate = 15 - _currentFishies.Count;
                 for (int i = 0; i < fishesToCreate; i++)
                 {
                     Debug.WriteLine($"Skapar en ny fisk... ({i + 1}/{fishesToCreate})");
-                    FishData newFishData = _possibleFishes[_random.Next(0, _possibleFishes.Count - 1)];
+                    FishData newFishData = _possibleFishes[
+                        _random.Next(0, _possibleFishes.Count - 1)
+                    ];
                     Fish newFish = new Fish(
                         new Vector2(
                             _graphics.PreferredBackBufferWidth,
-                            _graphics.PreferredBackBufferHeight - _random.Next(100, 300)
-                        ), // Börja vid skärmens kant
+                            _graphics.PreferredBackBufferHeight
+                                - _random.Next(
+                                    (int)_fishingRod.Position.Y
+                                        + (int)_fishingRod.AssociatedAsset.Height / 2,
+                                    _graphics.PreferredBackBufferHeight
+                                )
+                        ), // Börja på en slumpvis höjd
                         newFishData,
                         Content
                     );
@@ -349,12 +432,18 @@ namespace FishGame
                 foreach (Fish fish in _currentFishies)
                 {
                     // Kontrollera om fisken kolliderar med metspöet och metspöet inte är "upptaget" med att ta hand om en annan fisk
-                    if (_fishingRod.HasBeenCollidedWith == false && fish.getAssociatedRectangle().Intersects(_fishingRod.getAssociatedRectangle())) {
+                    if (
+                        _fishingRod.HasBeenCollidedWith == false
+                        && fish.getAssociatedRectangle()
+                            .Intersects(_fishingRod.getAssociatedRectangle())
+                    )
+                    {
                         Debug.WriteLine("Vi har en kollison mellan en fisk och ett metspö.");
                         fish.HasBeenCollidedWith = true; // Markera kollision
                         _fishingRod.HasBeenCollidedWith = true;
                         _fishingRod.CollidedFish = fish; // Ställ in kolliderad fisk
-                    };
+                    }
+                    ;
                     Vector2 nextFishPos = fish.getNextPos(
                         _graphics.PreferredBackBufferHeight,
                         _graphics.PreferredBackBufferWidth,
@@ -365,10 +454,8 @@ namespace FishGame
                     if (nextFishPos.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
                     {
                         _tempCurrentFishies.Remove(fish);
-                        // Om det var en kollision som nyss skedde så gör fiskespöet tillgängligt att fånga mer fisk
-                        if (fish.HasBeenCollidedWith && _fishingRod.HasBeenCollidedWith) { 
-                        _fishingRod.HasBeenCollidedWith = false;
-                        }
+                        fish.HasBeenCollidedWith = false;
+                        fishingRodCooldown = 0;
                     }
                     else
                     {
@@ -378,16 +465,40 @@ namespace FishGame
                 _currentFishies = _tempCurrentFishies; // Uppdatera lista från temporär lista
 
                 // Rita ut kroken/metspöet/fiskespöet
-                _spriteBatch.Draw(_fishingRod.AssociatedAsset, _fishingRod.getNextPos(0,0,0,0), Color.White);
+                _spriteBatch.Draw(
+                    _fishingRod.AssociatedAsset,
+                    _fishingRod.getNextPos(0, 0, 0, 0),
+                    Color.White
+                );
 
-                // Rita ut text som visar aktuellt djup
-                double _depthInMetres = Math.Round(_depth / DepthToMetersFactor, 1);
-                _spriteBatch.DrawString(_mainFont, $"Djup: {_depthInMetres} m", new Vector2(_graphics.PreferredBackBufferWidth-150, 25), Color.White);
+                // Rita ut text som visar aktuellt djup, poäng, etc
+                double _depthInMetres = getDepthInMetres();
+                _spriteBatch.DrawString(
+                    _mainFont,
+                    $"Poäng: {_score}",
+                    new Vector2(_graphics.PreferredBackBufferWidth - 150, 25),
+                    Color.White
+                );
+                _spriteBatch.DrawString(
+                    _mainFont,
+                    $"Djup: {_depthInMetres} m",
+                    new Vector2(_graphics.PreferredBackBufferWidth - 150, 50),
+                    Color.White
+                );
             }
-            
+
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        /// <summary>
+        /// Eftersom _depth-variabeln är i pixlar så finns det en funktion för att konvertera den till meter i havet som är mer användarvänligt
+        /// </summary>
+        /// <returns></returns>
+        public double getDepthInMetres()
+        {
+            return Math.Round(_depth / (_graphics.PreferredBackBufferHeight / 8), 1); // 1 m är 1/8 av skärmen
         }
     }
 }

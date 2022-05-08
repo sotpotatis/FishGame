@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Audio;
+using System.Diagnostics;
 
 namespace FishGame
 {
@@ -17,10 +18,10 @@ namespace FishGame
         public Vector2 Position { get; set; } // Knappens position på skärmen
 
         public GameState ActiveOnScreen { get; set; } // Vilken skärm (titelskärmen, spelskärmen, etc.) som knappen finns tillgänglig på
-        public Texture2D ActiveAsset { get; set;} // Den aktiva texturen som knappen visar
+        public Texture2D ActiveAsset { get; set; } // Den aktiva texturen som knappen visar
 
-        private SoundEffect _buttonClickSound { get; set; } // Ljud när knapp klickas på
-        private SoundEffect _buttonHoverSound { get; set; } // Ljud när knapp hålls över
+        private SoundEffectInstance _buttonClickSound { get; set; } // Ljud när knapp klickas på
+        private SoundEffectInstance _buttonHoverSound { get; set; } // Ljud när knapp hålls över
 
         private enum ButtonStates // Knappens möjliga statusar
         {
@@ -29,16 +30,25 @@ namespace FishGame
             Clicked
         }
 
-        public Button(string baseAssociatedAssetName, ContentManager contentLoader, Vector2 position, GameState activeOnScreen)
+        private ButtonState _previousButtonState { get; set; }
+
+        public Button(
+            string baseAssociatedAssetName,
+            ContentManager contentLoader,
+            Vector2 position,
+            GameState activeOnScreen
+        )
         {
-            AssociatedAssets = new Tuple<Texture2D, Texture2D>(contentLoader.Load<Texture2D>(baseAssociatedAssetName), contentLoader.Load<Texture2D>(baseAssociatedAssetName + "-hovered")); // Hämta bilder till knappen
+            AssociatedAssets = new Tuple<Texture2D, Texture2D>(
+                contentLoader.Load<Texture2D>(baseAssociatedAssetName),
+                contentLoader.Load<Texture2D>(baseAssociatedAssetName + "-hovered")
+            ); // Hämta bilder till knappen
             ActiveAsset = AssociatedAssets.Item1;
             Position = position;
             ActiveOnScreen = activeOnScreen;
             // Ljud när knapp klickas på respektive hålls över
-            _buttonClickSound = contentLoader.Load<SoundEffect>("buttonClicked");
-            _buttonHoverSound = contentLoader.Load<SoundEffect>("buttonHovered");
-
+            _buttonClickSound = contentLoader.Load<SoundEffect>("button-click").CreateInstance();
+            _buttonHoverSound = contentLoader.Load<SoundEffect>("button-hovered").CreateInstance();
         }
 
         /// <summary>
@@ -49,15 +59,31 @@ namespace FishGame
         /// <returns></returns>
         private ButtonStates getButtonState(MouseState mouseState, MouseState previousMouseState)
         {
-            if (mouseState.X >= Position.X && mouseState.X <= Position.X + ActiveAsset.Width && mouseState.Y >= ActiveAsset.Height && mouseState.Y <= ActiveAsset.Height) // Muspekaren hålls vid knappen
+            if (
+                mouseState.X >= Position.X
+                && mouseState.X <= Position.X + ActiveAsset.Width
+                && mouseState.Y >= Position.Y
+                && mouseState.Y <= Position.Y + ActiveAsset.Height
+            ) // Muspekaren hålls vid knappen
             {
-                if (mouseState.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Pressed)
+                if (
+                    mouseState.LeftButton == ButtonState.Pressed
+                    && previousMouseState.LeftButton != ButtonState.Pressed
+                )
                 { // Om knappen har tryckts på, spela klickljud och returnera status
-                    _buttonClickSound.Play();
+                    if (_buttonClickSound.State != SoundState.Playing)
+                    {
+                        _buttonClickSound.Play();
+                    }
                     return ButtonStates.Clicked;
                 }
                 else
                 {
+                    if (_buttonHoverSound.State != SoundState.Playing)
+                    {
+                        _buttonHoverSound.Play();
+                    }
+
                     return ButtonStates.Hovered;
                 }
             }
@@ -65,9 +91,8 @@ namespace FishGame
             {
                 return ButtonStates.Idle;
             }
-
-
         }
+
         /// <summary>
         /// Hämtar vilken bild som ska visas för knappen. Om någon håller muspekaren över knappen så vill vi ju att den ska visas som "markerad"
         /// </summary>
@@ -104,6 +129,5 @@ namespace FishGame
                 return false;
             }
         }
-
     }
 }

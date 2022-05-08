@@ -14,6 +14,7 @@ namespace FishGame
             Vector2 position,
             int speed,
             int speedX,
+            int cooldown,
             string associatedAssetName,
             ContentManager contentLoader
         )
@@ -21,6 +22,7 @@ namespace FishGame
             Position = position;
             Speed = speed;
             SpeedX = speedX; // Hastighet i X-led.
+            Cooldown = cooldown;
             AssociatedAsset = contentLoader.Load<Texture2D>(associatedAssetName);
             IsFish = false;
             HasBeenCollidedWith = false;
@@ -29,16 +31,26 @@ namespace FishGame
         public int SpeedX { get; }
         public Fish CollidedFish { get; set; }
 
+        public int Cooldown { get; set; }
+
         /// <summary>
         /// Hämtar nästa position som fiskespöet ska befinna sig på. Fiskespöet ska fungera lite annorlunda
         /// </summary>
         /// <param name="depth"></param>
         /// <returns></returns>
-        public override Vector2 getNextPos(int screenWidth, int screenHeight, float depth, float fishingRodCatchingSpeed)
+        public override Vector2 getNextPos(
+            int screenWidth,
+            int screenHeight,
+            float depth,
+            float fishingRodCatchingSpeed
+        )
         {
             if (HasBeenCollidedWith)
             { // Vi vill att fiskespöet ska röra sig uppåt tillsammans med fisken när det har fångat saker
-                return new Vector2(CollidedFish.Position.X, CollidedFish.Position.Y);
+                return new Vector2(
+                    (CollidedFish.Position.X + CollidedFish.AssociatedAsset.Width) / 2,
+                    (CollidedFish.Position.Y + CollidedFish.AssociatedAsset.Height) / 2
+                );
             }
             else
             {

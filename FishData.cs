@@ -14,8 +14,8 @@ namespace FishGame
             int value,
             int defaultSpeed,
             int minSpawnDepth,
-            int? maxSpawnDepth=null
-            )
+            int? maxSpawnDepth = null
+        )
         {
             Rarity = rarity;
             Value = value;
@@ -36,11 +36,12 @@ namespace FishGame
         public float MinSpawnDepth { get; set; } // Det minsta djupet där fisken "spawnas" på.
         public float? MaxSpawnDepth { get; set; } // Maxdjupet där fisken "spawnas" på.
 
-        public bool IsAvailableAt(float depth)
+        public bool IsAvailableAt(double depth)
         {
             // Vissa fiskar finns bara tillgängliga vid ett visst djup. Denna funktion returnerar om fisken finns tillgänglig vid djupet eller inte
             Debug.WriteLine($"{depth} är djupet, min {MinSpawnDepth}, max {MaxSpawnDepth}");
-            if (depth >= MinSpawnDepth && (MaxSpawnDepth == null || depth <= MaxSpawnDepth)){ // TODO Fungerar ej
+            if (depth >= MinSpawnDepth && (MaxSpawnDepth == null || depth <= MaxSpawnDepth))
+            {
                 return true;
             }
             else
