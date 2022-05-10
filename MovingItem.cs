@@ -12,11 +12,12 @@ namespace FishGame
         // Representerar ett objekt som genenerellt rör sig på skärmen
         public Vector2 Position { get; set; } //Position på skärmen
         public float Speed { get; set; } // Hastighet
-        public bool HasBeenCollidedWith { get; set; } // Om föremålet har blivit krockad med eller inte
-        public bool IsFish { get; set; } // Om föremålet är en fisk eller inte
+        public bool HasBeenCollidedWith { get; protected set; } // Om föremålet har blivit krockat med eller inte
+        public bool IsFish { get; protected set; } // Om föremålet är en fisk eller inte
 
         private float _lastDepth { get; set; } = 0; // Det senaste djupet som föremålet befann sig på. Detta används för att hämta nästa position.
         public Texture2D AssociatedAsset { get; set; } // Texturen som associeras med objektet som rör sig
+
         public virtual Vector2 getNextPos(int screenHeight, int screenWidth, float depth, float fishingRodCatchingSpeed)
         {
             // Funktion för att hantera ny position, bl.a. vid en kollision. Returnerar den nästa positionen som objektet ska ha.
@@ -60,6 +61,54 @@ namespace FishGame
         public Rectangle getAssociatedRectangle()
         {
             return new Rectangle((int)Position.X, (int)Position.Y, AssociatedAsset.Width, AssociatedAsset.Height); // Returnera en rektangel
+        }
+
+         /// <summary>
+        /// Markerar det som att man har föremålet har kolliderats med.
+        /// </summary>
+        /// <returns></returns>
+        public void MarkAsCollidedWith()
+        {
+        if (!HasBeenCollidedWith)
+            {
+                HasBeenCollidedWith = true;
+            }
+        }
+
+        /// <summary>
+        /// Markerar det som att man har föremålet har kolliderats med.
+        /// </summary>
+        /// <returns></returns>
+        public void MarkAsNotCollidedWith()
+        {
+        if (HasBeenCollidedWith)
+            {
+                HasBeenCollidedWith = false;
+            }
+        }
+
+        public void CheckAndHandleCollisionWithFishingRod(FishingRod fishingRod, float depth, GraphicsDeviceManager _graphics)
+        {
+            if (
+                        fishingRod.HasBeenCollidedWith == false
+                        && getAssociatedRectangle()
+                            .Intersects(fishingRod.getAssociatedRectangle())
+                    )
+                    {
+                        Debug.WriteLine("Vi har en kollison mellan en sak och ett metspö.");
+                        MarkAsCollidedWith(); // Markera kollision
+                        fishingRod.MarkAsCollidedWith();
+                        fishingRod.CollidedItem = this; // Ställ in kolliderat föremål
+                    }
+                    ;
+                    // Uppdatera plats
+                    Position = fishingRod.getNextPos(
+                        _graphics.PreferredBackBufferHeight,
+                        _graphics.PreferredBackBufferWidth,
+                        depth,
+                        fishingRod.Speed
+                    );
+
         }
     }
 }

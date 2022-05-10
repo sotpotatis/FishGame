@@ -25,6 +25,7 @@ namespace FishGame
 
         // Data av olika slag
         List<Fish> _currentFishies = new List<Fish>(); // Lista med de nuvarande inladdade fiskarna i spelet
+        List<PowerUp> currentPowerUps = new List<PowerUp>(); // Lista med de nuvarande inladdede powerupsen i spelet
         List<FishData> _gameFishies;
         Fisherman _fisherman;
         FishingRod _fishingRod;
@@ -51,7 +52,7 @@ namespace FishGame
             // _graphics.IsFullScreen = true; // Specificera att spelet ska köras i fullskärm
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            _state = GameState.FishCatchingScreen;
+            _state = GameState.TitleScreen;
         }
 
         protected override void Initialize()
@@ -108,14 +109,21 @@ namespace FishGame
                     minSpawnDepth: 0
                 ),
             };
-            // Nedan följer detsamma, fast för skräp
-            JunkData[] _gameJunk = new JunkData[]
+            // Nedan följer detsamma, fast för powerups
+            PowerUpData[] _gamePowerUps = new PowerUpData[]
             {
-                new JunkData(
-                    name: "Stövel",
+                new PowerUpData(
+                    name: "Silver sömnpiller",
                     associatedAssetName: "placeholder",
                     rarity: 10,
-                    value: -10
+                    activeFor: 30
+                ),
+                new PowerUpData(
+                    name: "Guldigt sömnpiller",
+                    associatedAssetName: "placeholder",
+                    rarity: 10,
+                    activeFor: 30,
+                    minDepth: 20
                 )
             };
             // Initiera också fiskaren
@@ -129,29 +137,29 @@ namespace FishGame
                 "fishing-rod-placeholder",
                 Content
             );
+            //...lite knappar i spelet...
+            _gameButtons = new Dictionary<string, Button>()
+            {
+                ["play"] = new Button(
+                    "button-start",
+                    Content,
+                    new Vector2(_graphics.PreferredBackBufferWidth/2, _graphics.PreferredBackBufferHeight / 2),
+                    GameState.TitleScreen
+                ),
+                ["help"] = new Button(
+                    "button-help",
+                    Content,
+                    new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2 +120),
+                    GameState.TitleScreen
+                ),
+            };
             //...och ställ in djupet samt andra variabler
             _depth = 0;
             _score = 0;
             _maxDepth = 500;
             _timeSinceLastAnimation = 0;
             base.Initialize();
-            //...lite knappar i spelet...
-
-            _gameButtons = new Dictionary<string, Button>()
-            {
-                ["play"] = new Button(
-                    "button-start",
-                    Content,
-                    new Vector2(200, 200),
-                    GameState.TitleScreen
-                ),
-                ["help"] = new Button(
-                    "button-help",
-                    Content,
-                    new Vector2(200, 300),
-                    GameState.TitleScreen
-                ),
-            };
+    
         }
 
         protected override void LoadContent()
@@ -221,12 +229,11 @@ namespace FishGame
             }
             else if (_state == GameState.FishCatchingScreen)
             {
-                Debug.WriteLine($"{gameTime.TotalGameTime.TotalMilliseconds} har passerat");
                 if (!_fishingRod.HasBeenCollidedWith)
                 {
                     if (Keyboard.GetState().IsKeyDown(Keys.Up))
                     {
-                        // Flytta metspöet upp om vi kan det
+                        // Flytta upp om vi kan det
                         if (_depth > 0)
                         {
                             if (_depth - _fishingRod.Speed <= 0)
@@ -245,7 +252,7 @@ namespace FishGame
                     }
                     else if (Keyboard.GetState().IsKeyDown(Keys.Down))
                     {
-                        // Flytta metspöet nedåt om vi kan det
+                        // Flytta nedåt om vi kan det
                         if (_depth + _fishingRod.Speed < _maxDepth)
                         {
                             _depth += _fishingRod.Speed;
@@ -303,7 +310,7 @@ namespace FishGame
                         )
                         {
                             Debug.WriteLine("Återställer fiskespö...");
-                            _fishingRod.HasBeenCollidedWith = false;
+                            _fishingRod.MarkAsNotCollidedWith();
                         }
                         else
                         {
@@ -368,7 +375,7 @@ namespace FishGame
                 // Ladda in fiskaren
                 // Hämta nästa bild i animationen om vi just nu animerar
                 int _fishermanImageIndex = _fishermanImages.IndexOf(_fishermanImage);
-                if (gameTime.TotalGameTime.TotalMilliseconds - _timeSinceLastAnimation > 2000)
+                if (gameTime.TotalGameTime.TotalMilliseconds - _timeSinceLastAnimation > 1000)
                 {
                     if (_fishermanImageIndex + 1 < _fishermanImages.Count)
                     {
@@ -378,6 +385,8 @@ namespace FishGame
                     { // Om vi har animerat klart, byt sedan skärm
                         _state = GameState.FishCatchingScreen; // Byt skärm om vi har animerat klart
                     }
+                    Debug.WriteLine($"Uppdaterar: nytt index är {_fishermanImageIndex}");
+                    _timeSinceLastAnimation = gameTime.TotalGameTime.TotalMilliseconds;
                 }
                 _fishermanImage = _fishermanImages[_fishermanImageIndex];
                 _spriteBatch.Draw(
@@ -391,7 +400,6 @@ namespace FishGame
                     SpriteEffects.None,
                     0
                 );
-                _timeSinceLastAnimation = gameTime.TotalGameTime.TotalMilliseconds;
             }
             else if (_state == GameState.FishCatchingScreen)
             {
@@ -427,42 +435,44 @@ namespace FishGame
                     _currentFishies.Add(newFish);
                 }
                 ;
-                // Rita ut alla fiskar
+                // Rita ut alla fiskar och powerups
                 List<Fish> _tempCurrentFishies = new List<Fish>(_currentFishies);
                 foreach (Fish fish in _currentFishies)
                 {
                     // Kontrollera om fisken kolliderar med metspöet och metspöet inte är "upptaget" med att ta hand om en annan fisk
-                    if (
-                        _fishingRod.HasBeenCollidedWith == false
-                        && fish.getAssociatedRectangle()
-                            .Intersects(_fishingRod.getAssociatedRectangle())
-                    )
-                    {
-                        Debug.WriteLine("Vi har en kollison mellan en fisk och ett metspö.");
-                        fish.HasBeenCollidedWith = true; // Markera kollision
-                        _fishingRod.HasBeenCollidedWith = true;
-                        _fishingRod.CollidedFish = fish; // Ställ in kolliderad fisk
-                    }
-                    ;
-                    Vector2 nextFishPos = fish.getNextPos(
-                        _graphics.PreferredBackBufferHeight,
-                        _graphics.PreferredBackBufferWidth,
-                        _depth,
-                        _fishingRod.Speed
-                    );
+                    fish.CheckAndHandleCollisionWithFishingRod(_fishingRod, _depth, _graphics);
 
-                    if (nextFishPos.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
+                    if (fish.Position.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
                     {
                         _tempCurrentFishies.Remove(fish);
-                        fish.HasBeenCollidedWith = false;
+                        fish.MarkAsNotCollidedWith();
                         fishingRodCooldown = 0;
                     }
                     else
                     {
-                        _spriteBatch.Draw(fish.AssociatedAsset, nextFishPos, Color.White);
+                        _spriteBatch.Draw(fish.AssociatedAsset, fish.Position, Color.White);
                     }
                 }
                 _currentFishies = _tempCurrentFishies; // Uppdatera lista från temporär lista
+
+                List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>(currentPowerUps);
+                foreach (PowerUp powerUp in currentPowerUps)
+                {
+                    // Kontrollera om fisken kolliderar med metspöet och metspöet inte är "upptaget" med att ta hand om en annan fisk
+                    powerUp.CheckAndHandleCollisionWithFishingRod(_fishingRod, _depth, _graphics);
+
+                    if (powerUp.Position.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
+                    {
+                        _tempCurrentPowerUps.Remove(powerUp);
+                        powerUp.MarkAsNotCollidedWith();
+                        fishingRodCooldown = 0;
+                    }
+                    else
+                    {
+                        _spriteBatch.Draw(powerUp.AssociatedAsset, powerUp.Position, Color.White);
+                    }
+                }
+                currentPowerUps = _tempCurrentPowerUps; // Uppdatera lista från temporär lista
 
                 // Rita ut kroken/metspöet/fiskespöet
                 _spriteBatch.Draw(
@@ -493,7 +503,7 @@ namespace FishGame
         }
 
         /// <summary>
-        /// Eftersom _depth-variabeln är i pixlar så finns det en funktion för att konvertera den till meter i havet som är mer användarvänligt
+        /// Eftersom _depth-variabeln är i pixlar så finns det en funktion för att konvertera den till meter i havet som är mer användarvänligt.
         /// </summary>
         /// <returns></returns>
         public double getDepthInMetres()

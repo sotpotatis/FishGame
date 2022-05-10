@@ -29,7 +29,7 @@ namespace FishGame
         }
 
         public int SpeedX { get; }
-        public Fish CollidedFish { get; set; }
+        public MovingItem CollidedItem { get; set; }
 
         public int Cooldown { get; set; }
 
@@ -48,8 +48,8 @@ namespace FishGame
             if (HasBeenCollidedWith)
             { // Vi vill att fiskespöet ska röra sig uppåt tillsammans med fisken när det har fångat saker
                 return new Vector2(
-                    (CollidedFish.Position.X + CollidedFish.AssociatedAsset.Width) / 2,
-                    (CollidedFish.Position.Y + CollidedFish.AssociatedAsset.Height) / 2
+                    (CollidedItem.Position.X + CollidedItem.AssociatedAsset.Width) / 2,
+                    (CollidedItem.Position.Y + CollidedItem.AssociatedAsset.Height) / 2
                 );
             }
             else
