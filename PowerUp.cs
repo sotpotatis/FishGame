@@ -10,9 +10,11 @@ namespace FishGame
     class PowerUp : MovingItem
     {
         // Representerar en powerup. Till skillnad från PowerupData så innehåller även denna klass de variabler som krävs för att personligt identifiera powerups.
-        public PowerUpData Data { get; set; } // Data om skräpet
+        public PowerUpData Data { get; set; } // Data om powerupen
         public bool IsActivated { get; private set; } // Om powerupen är aktiverad eller inte
-        public int PowerUpActivatedAt { get; private set; } // När powerupen aktiverades
+        public double PowerUpActivatedAt { get; private set; } // När powerupen aktiverades
+
+        public double PreviousValue { get; private set; } // Det tidigare värdet som det som powerupen är kopplad till hade innan powerupen aktiverades.
 
         public PowerUp(
             Vector2 position,
@@ -32,15 +34,15 @@ namespace FishGame
             IsActivated = false;
             PowerUpActivatedAt = 0;
         }
-        
+
         /// <summary>
         /// Kontrollerar om powerupen fortfarande är aktiv eller inte.
         /// </summary>
         /// <param name="currentGameTimeSeconds">Den aktuella tiden som har passerat sedan spelet startades</param>
         /// <returns></returns>
-        public bool CheckPowerUpStillActive(int currentGameTimeSeconds)
+        public bool CheckPowerUpStillActive(double currentGameTimeSeconds)
         {
-            if (currentGameTimeSeconds - PowerUpActivatedAt >  Data.ActiveFor)
+            if (currentGameTimeSeconds - PowerUpActivatedAt > Data.ActiveFor)
             {
                 IsActivated = false;
             }
@@ -56,7 +58,7 @@ namespace FishGame
         /// </summary>
         /// <param name="currentGameTimeSeconds">Den aktuella tiden som har passerat sedan spelet startades</param>
         /// <returns></returns>
-        public void activatePowerUp(int currentGameTimeSeconds)
+        public void activatePowerUp(double currentGameTimeSeconds)
         {
             if (!IsActivated)
             {

@@ -25,7 +25,8 @@ namespace FishGame
 
         // Data av olika slag
         List<Fish> _currentFishies = new List<Fish>(); // Lista med de nuvarande inladdade fiskarna i spelet
-        List<PowerUp> currentPowerUps = new List<PowerUp>(); // Lista med de nuvarande inladdede powerupsen i spelet
+        List<PowerUp> currentPowerUps = new List<PowerUp>(); // Lista med de nuvarande inladdade (fångbara) powerupsen i spelet
+        List<PowerUp> currentActivatedPowerUps = new List<PowerUp>(); // Lista med de nuvarande aktiva (fångade) powerupsen i spelen
         List<FishData> _gameFishies;
         Fisherman _fisherman;
         FishingRod _fishingRod;
@@ -38,6 +39,12 @@ namespace FishGame
         private List<Texture2D> _fishermanImages;
         const int FisherManAnimationsCount = 5; // Varje animationsframe för fiskaren slutar på ett nummer. Denna variabel används för att styra hur många animationsrutor "frames" som ska laddas in i spelet.
         private SpriteFont _mainFont; // Standardfontet att använda
+
+        // Multipliers (för powerups)
+        double scoreMultiplier = 1;
+        double fishMultiplier = 1;
+        double cooldownMultiplier = 1;
+        double depthMultiplier = 1;
 
         // Övrigt
         Random _random = new Random();
@@ -115,12 +122,14 @@ namespace FishGame
                 new PowerUpData(
                     name: "Silver sömnpiller",
                     associatedAssetName: "placeholder",
+                    type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
                     activeFor: 30
                 ),
                 new PowerUpData(
                     name: "Guldigt sömnpiller",
                     associatedAssetName: "placeholder",
+                    type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
                     activeFor: 30,
                     minDepth: 20
@@ -138,18 +147,23 @@ namespace FishGame
                 Content
             );
             //...lite knappar i spelet...
+            // Knappstorlek: 128x64. Därmed kan vi ta fram positionen för att centrera knapparna
+            Vector2 buttonCenterPosition = new Vector2(
+                (_graphics.PreferredBackBufferWidth / 2) - 64,
+                (_graphics.PreferredBackBufferHeight / 2) - 32
+            );
             _gameButtons = new Dictionary<string, Button>()
             {
                 ["play"] = new Button(
                     "button-start",
                     Content,
-                    new Vector2(_graphics.PreferredBackBufferWidth/2, _graphics.PreferredBackBufferHeight / 2),
+                    new Vector2(buttonCenterPosition.X, buttonCenterPosition.Y),
                     GameState.TitleScreen
                 ),
                 ["help"] = new Button(
                     "button-help",
                     Content,
-                    new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2 +120),
+                    new Vector2(buttonCenterPosition.X, buttonCenterPosition.Y + 74), // Knappstorlek: 128x64
                     GameState.TitleScreen
                 ),
             };
@@ -159,7 +173,6 @@ namespace FishGame
             _maxDepth = 500;
             _timeSinceLastAnimation = 0;
             base.Initialize();
-    
         }
 
         protected override void LoadContent()
@@ -311,14 +324,36 @@ namespace FishGame
                         {
                             Debug.WriteLine("Återställer fiskespö...");
                             _fishingRod.MarkAsNotCollidedWith();
+                            _fishingRod.Position = new Vector2(
+                                0 + _fishingRod.AssociatedAsset.Width,
+                                0 + _fishingRod.AssociatedAsset.Height
+                            ); // Flytta tillbaka fiskespöet till starten
                         }
                         else
                         {
                             Debug.WriteLine(
-                                $"Fiskespöet är fortfarande på cooldown... {fishingRodCooldown}/{_fishingRod.Cooldown} millisekunder."
+                                $"Fiskespöet är fortfarande på cooldown... {gameTime.TotalGameTime.TotalMilliseconds - fishingRodCooldown}/{_fishingRod.Cooldown} millisekunder."
                             );
                         }
                     }
+                }
+                // Hantera powerups. Se till att de som ska vara aktiverade är det.
+                foreach (PowerUp powerUp in currentActivatedPowerUps)
+                {
+                    if (!powerUp.IsActivated && powerUp.HasBeenCollidedWith) // Om powerupen har kolliderats med av fiskespöet men inte aktiverats så vill vi ju aktivera den. Det gör vi här!
+                    {
+                        powerUp.activatePowerUp(gameTime.TotalGameTime.TotalSeconds);
+                    }
+                    if (powerUp.CheckPowerUpStillActive(gameTime.TotalGameTime.TotalSeconds)) // Kontrollera om powerupen fortfarande är aktiverad.
+                    {
+                        // Isåfall, se till att spelet uppdateras så att man drar fördel av powerupsen
+                        // Information: Se klassen "PowerUpData" för mer information om powerups :))
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill) { }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.Healer) { }
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.FishMultiplier) { }
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.ScoreMultiplier) { }
+                    }
+                    else { }
                 }
             }
             base.Update(gameTime);
@@ -346,25 +381,15 @@ namespace FishGame
             else if (_state == GameState.IdleScreen)
             {
                 // Visa bilden på fiskaren
-                _spriteBatch.Draw(
-                    _fishermanImage,
-                    new Vector2(0, 0),
-                    null,
-                    Color.White,
-                    0,
-                    new Vector2(0, 0),
-                    1.5f,
-                    SpriteEffects.None,
-                    0
-                );
+                drawScaled(_fishermanImage, new Vector2(0, 0), 3);
                 // Lägg till en instruerande text
                 _spriteBatch.DrawString(
                     _mainFont,
                     "Tryck på SPACE för att fånga fisk",
                     new Vector2(
-                        _graphics.PreferredBackBufferWidth
+                        (_graphics.PreferredBackBufferWidth) / 2
                             - _mainFont.MeasureString("Tryck på SPACE för att fånga fisk").X / 2,
-                        300
+                        _graphics.PreferredBackBufferHeight / 2
                     ),
                     Color.White
                 );
@@ -389,17 +414,7 @@ namespace FishGame
                     _timeSinceLastAnimation = gameTime.TotalGameTime.TotalMilliseconds;
                 }
                 _fishermanImage = _fishermanImages[_fishermanImageIndex];
-                _spriteBatch.Draw(
-                    _fishermanImage,
-                    new Vector2(0, 0),
-                    null,
-                    Color.White,
-                    0,
-                    new Vector2(0, 0),
-                    1.5f,
-                    SpriteEffects.None,
-                    0
-                );
+                drawScaled(_fishermanImage, new Vector2(0, 0), 3);
             }
             else if (_state == GameState.FishCatchingScreen)
             {
@@ -445,8 +460,6 @@ namespace FishGame
                     if (fish.Position.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
                     {
                         _tempCurrentFishies.Remove(fish);
-                        fish.MarkAsNotCollidedWith();
-                        fishingRodCooldown = 0;
                     }
                     else
                     {
@@ -458,14 +471,15 @@ namespace FishGame
                 List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>(currentPowerUps);
                 foreach (PowerUp powerUp in currentPowerUps)
                 {
-                    // Kontrollera om fisken kolliderar med metspöet och metspöet inte är "upptaget" med att ta hand om en annan fisk
+                    // Hantera kollision med powerupen
                     powerUp.CheckAndHandleCollisionWithFishingRod(_fishingRod, _depth, _graphics);
-
-                    if (powerUp.Position.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
+                    if (powerUp.HasBeenCollidedWith && !currentActivatedPowerUps.Contains(powerUp)) // Lägg till powerupen i listan med powerups när den har aktiveras
+                    {
+                        currentActivatedPowerUps.Add(powerUp);
+                    }
+                    if (powerUp.Position.X == -1) // Negativa koordinater - powerupen ska gömmas från skärmen
                     {
                         _tempCurrentPowerUps.Remove(powerUp);
-                        powerUp.MarkAsNotCollidedWith();
-                        fishingRodCooldown = 0;
                     }
                     else
                     {
@@ -509,6 +523,28 @@ namespace FishGame
         public double getDepthInMetres()
         {
             return Math.Round(_depth / (_graphics.PreferredBackBufferHeight / 8), 1); // 1 m är 1/8 av skärmen
+        }
+
+        /// <summary>
+        /// Något som är lite irriteraned med MonoGame är att man inte kan skala upp en bild som man skapat utan att skriva en jättelång "call" till .Draw().
+        /// Jag skapar här en funktion som stödjer att rita ut saker skalade.
+        /// </summary>
+        /// <param name="image">Bilden/texturen som ska ritas ut.</param>
+        /// <param name="position">Texturens position på skärmen</param>
+        /// <param name="scaleFactor">Hur många gånger texturen ska föstoras "skalas upp".</param>
+        public void drawScaled(Texture2D image, Vector2 position, float scaleFactor)
+        {
+            _spriteBatch.Draw(
+                image,
+                position,
+                null,
+                Color.White,
+                0,
+                new Vector2(0, 0),
+                scaleFactor,
+                SpriteEffects.None,
+                0
+            );
         }
     }
 }

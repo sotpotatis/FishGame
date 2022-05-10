@@ -18,7 +18,12 @@ namespace FishGame
         private float _lastDepth { get; set; } = 0; // Det senaste djupet som föremålet befann sig på. Detta används för att hämta nästa position.
         public Texture2D AssociatedAsset { get; set; } // Texturen som associeras med objektet som rör sig
 
-        public virtual Vector2 getNextPos(int screenHeight, int screenWidth, float depth, float fishingRodCatchingSpeed)
+        public virtual Vector2 getNextPos(
+            int screenHeight,
+            int screenWidth,
+            float depth,
+            float fishingRodCatchingSpeed
+        )
         {
             // Funktion för att hantera ny position, bl.a. vid en kollision. Returnerar den nästa positionen som objektet ska ha.
             // (om en vektor med negativa koordinater returneras så ska objektet tas bort)
@@ -35,7 +40,7 @@ namespace FishGame
                 else
                 { // Om vi inte har nått kanten på skärmen
                     Debug.WriteLine("X-gräns har inte nåtts");
-                    Position = new Vector2(Position.X - Speed, Position.Y-(depth-_lastDepth));
+                    Position = new Vector2(Position.X - Speed, Position.Y - (depth - _lastDepth));
                 }
             }
             else
@@ -54,22 +59,28 @@ namespace FishGame
             _lastDepth = depth;
             return Position;
         }
+
         /// <summary>
         /// Hämtar en rektangel för bildobjektet kopplat till föremålet. Kan med fördel användas till kollisionshantering etc.
         /// </summary>
         /// <returns></returns>
         public Rectangle getAssociatedRectangle()
         {
-            return new Rectangle((int)Position.X, (int)Position.Y, AssociatedAsset.Width, AssociatedAsset.Height); // Returnera en rektangel
+            return new Rectangle(
+                (int)Position.X,
+                (int)Position.Y,
+                AssociatedAsset.Width,
+                AssociatedAsset.Height
+            ); // Returnera en rektangel
         }
 
-         /// <summary>
+        /// <summary>
         /// Markerar det som att man har föremålet har kolliderats med.
         /// </summary>
         /// <returns></returns>
         public void MarkAsCollidedWith()
         {
-        if (!HasBeenCollidedWith)
+            if (!HasBeenCollidedWith)
             {
                 HasBeenCollidedWith = true;
             }
@@ -81,34 +92,47 @@ namespace FishGame
         /// <returns></returns>
         public void MarkAsNotCollidedWith()
         {
-        if (HasBeenCollidedWith)
+            if (HasBeenCollidedWith)
             {
                 HasBeenCollidedWith = false;
             }
         }
 
-        public void CheckAndHandleCollisionWithFishingRod(FishingRod fishingRod, float depth, GraphicsDeviceManager _graphics)
+        public void CheckAndHandleCollisionWithFishingRod(
+            FishingRod fishingRod,
+            float depth,
+            GraphicsDeviceManager _graphics
+        )
         {
             if (
-                        fishingRod.HasBeenCollidedWith == false
-                        && getAssociatedRectangle()
-                            .Intersects(fishingRod.getAssociatedRectangle())
-                    )
-                    {
-                        Debug.WriteLine("Vi har en kollison mellan en sak och ett metspö.");
-                        MarkAsCollidedWith(); // Markera kollision
-                        fishingRod.MarkAsCollidedWith();
-                        fishingRod.CollidedItem = this; // Ställ in kolliderat föremål
-                    }
-                    ;
-                    // Uppdatera plats
-                    Position = fishingRod.getNextPos(
-                        _graphics.PreferredBackBufferHeight,
-                        _graphics.PreferredBackBufferWidth,
-                        depth,
-                        fishingRod.Speed
-                    );
-
+                fishingRod.HasBeenCollidedWith == false
+                && getAssociatedRectangle().Intersects(fishingRod.getAssociatedRectangle())
+            ) // Tillåt endast kollisioner när fiskespöet är redo.
+            {
+                Debug.WriteLine("Vi har en kollison mellan en sak och ett metspö.");
+                MarkAsCollidedWith(); // Markera kollision
+                fishingRod.MarkAsCollidedWith();
+                fishingRod.CollidedItem = this; // Ställ in kolliderat föremål
+            }
+            ;
+            // Uppdatera plats för saken som kolliderat med fiskespöet
+            Position = getNextPos(
+                _graphics.PreferredBackBufferHeight,
+                _graphics.PreferredBackBufferWidth,
+                depth,
+                fishingRod.Speed
+            );
+            if (Position.X == -1) // Ny position har negativa koordindater - föremålet ska gömmas från skärmen
+            {
+                HasBeenCollidedWith = false;
+            }
+            // Uppdatera plats för fiskespöet
+            fishingRod.Position = fishingRod.getNextPos(
+                _graphics.PreferredBackBufferHeight,
+                _graphics.PreferredBackBufferWidth,
+                depth,
+                fishingRod.Speed
+            );
         }
     }
 }
