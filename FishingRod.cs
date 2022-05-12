@@ -49,7 +49,7 @@ namespace FishGame
             { // Vi vill att fiskespöet ska röra sig uppåt tillsammans med fisken när det har fångat saker
                 return new Vector2(
                     (CollidedItem.Position.X + CollidedItem.AssociatedAsset.Width) / 2,
-                    (CollidedItem.Position.Y + CollidedItem.AssociatedAsset.Height) / 2
+                    0 //(CollidedItem.Position.Y + CollidedItem.AssociatedAsset.Height) / 2
                 );
             }
             else

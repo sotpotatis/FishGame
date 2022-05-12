@@ -35,7 +35,7 @@ namespace FishGame
                 if (Position.X - AssociatedAsset.Width <= 0)
                 { // Om vi har nått kanten/gränsen på skärmen
                     Debug.WriteLine("X-gräns har nåtts");
-                    Position = new Vector2(-1, -1); // (koden kommer hantera den negativa positionen och radera fisken)
+                    Position = new Vector2(-1, -1); // (koden kommer hantera den negativa positionen och radera föremålet)
                 }
                 else
                 { // Om vi inte har nått kanten på skärmen

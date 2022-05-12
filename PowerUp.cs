@@ -19,7 +19,6 @@ namespace FishGame
         public PowerUp(
             Vector2 position,
             PowerUpData data,
-            int speed,
             ContentManager contentLoader,
             bool hasBeenCollidedWith = false
         )
@@ -27,7 +26,7 @@ namespace FishGame
             // Funktion för att initiera en powerup som flyttar på sig.
             Data = data;
             Position = position;
-            Speed = speed;
+            Speed = data.Speed;
             IsFish = false;
             AssociatedAsset = contentLoader.Load<Texture2D>(data.AssociatedAssetName);
             HasBeenCollidedWith = hasBeenCollidedWith;

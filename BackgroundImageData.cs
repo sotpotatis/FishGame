@@ -28,7 +28,7 @@ namespace FishGame
         public string AssociatedAssetName { get; }
         public int MinDepth { get; } // Det minsta djupet som bilden spawnas på.
         public int? MaxDepth { get; } // Det maximala djupet som bilden spawnas på.
-        public double DefaultSpeed { get; } // Standardhastigheten som föremålet har
+        public float DefaultSpeed { get; } // Standardhastigheten som föremålet har
 
         public double Rarity { get; private set; } // Hur sällan denna bild ritas ut.
 

@@ -126,27 +126,32 @@ namespace FishGame
             {
                 new PowerUpData(
                     name: "Silver sömnpiller",
-                    associatedAssetName: "placeholder",
+                    associatedAssetName: "clock-silver",
                     type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
                     multiplier: 0.2,
-                    activeFor: 30
+                    activeFor: 30,
+                    speed: 1
                 ),
                 new PowerUpData(
                     name: "Guldigt sömnpiller",
-                    associatedAssetName: "placeholder",
+                    associatedAssetName: "clock-silver",
                     type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
                     multiplier: 0.5,
                     activeFor: 30,
-                    minDepth: 20
+                    minDepth: 20,
+                    speed: 1
                 )
             };
 
-            _fishingBackgroundItems = new List<BackgroundImageData> { new BackgroundImageData("vattenbubbla", "placeholder-150", 1, 10),
-            new BackgroundImageData("Sjögräs #1", "placeholder-150", 1, 5),
-            new BackgroundImageData("Sjögräs #2", "placeholder-150", 1, 5),
-            new BackgroundImageData("Sjögräs #3", "placeholder-150", 1, 5)};
+            _fishingBackgroundItems = new List<BackgroundImageData>
+            {
+                new BackgroundImageData("Vattenbubbla", "bubble_small", 1, 10)
+                //new BackgroundImageData("Sjögräs #1", "placeholder", 1, 5),
+                //new BackgroundImageData("Sjögräs #2", "placeholder", 1, 5),
+                //new BackgroundImageData("Sjögräs #3", "placeholder", 1, 5)
+            };
 
             // Initiera också fiskaren
             _fisherman = new Fisherman();
@@ -329,6 +334,7 @@ namespace FishGame
                         if (fishingRodCooldown == 0)
                         { // Värdet är 0 när cooldownen inte har startat än. Det återställs av koden när kollisionen inleds
                             fishingRodCooldown = gameTime.TotalGameTime.TotalMilliseconds;
+                            _fishingRod.Position = new Vector2(0, 0); // Flytta tillbaka fiskespöet till startpositonen
                         }
                         if (
                             _fishingRod.Cooldown
@@ -337,10 +343,8 @@ namespace FishGame
                         {
                             Debug.WriteLine("Återställer fiskespö...");
                             _fishingRod.MarkAsNotCollidedWith();
-                            _fishingRod.Position = new Vector2(
-                                0 + _fishingRod.AssociatedAsset.Width,
-                                0 + _fishingRod.AssociatedAsset.Height
-                            ); // Flytta tillbaka fiskespöet till starten
+                            _fishingRod.Position = new Vector2(0, 0); // Flytta tillbaka fiskespöet till startpositonen
+                            _depth = 0; // Återställ aktuellt djup
                         }
                         else
                         {
@@ -422,7 +426,7 @@ namespace FishGame
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.LightBlue);
             _spriteBatch.Begin();
             // Rita ut alla knappar. Dessa sköts av min egna knapphanterare - magiskt va?
             foreach (Button button in _gameButtons.Values)
@@ -501,7 +505,7 @@ namespace FishGame
                             _graphics.PreferredBackBufferHeight
                                 - _random.Next(
                                     (int)_fishingRod.Position.Y
-                                        + (int)_fishingRod.AssociatedAsset.Height / 2,
+                                        + (int)_fishingRod.AssociatedAsset.Height, // (int)_fishingRod.AssociatedAsset.Height / 2
                                     _graphics.PreferredBackBufferHeight
                                 )
                         ), // Börja på en slumpvis höjd
@@ -513,12 +517,76 @@ namespace FishGame
                 ;
                 // Skapa också föremål i bakgrunden för att skapa en levande bakgrund
                 int backgroundImagesToCreate = 15 - _currentFishingBackgroundItems.Count;
-                List<BackgroundImageData> availableBackgroundsImages = _fishingBackgroundItems.Where(backgroundImage => backgroundImage.IsAvailableAt(_depth)).ToList();
+                List<BackgroundImageData> availableBackgroundsImages = _fishingBackgroundItems
+                    .Where(backgroundImage => backgroundImage.IsAvailableAt(_depth))
+                    .ToList();
                 for (int i = 0; i < backgroundImagesToCreate; i++)
                 {
-                    BackgroundImageData randomizedBackgroundImage = availableBackgroundsImages[_random.Next(0, availableBackgroundsImages.Count - 1)];
-                    _currentFishingBackgroundItems.Add(new BackgroundImage(new Vector2(_graphics.PreferredBackBufferWidth,_random.Next(_graphics.PreferredBackBufferHeight)), Content, randomizedBackgroundImage));
+                    BackgroundImageData randomizedBackgroundImage = availableBackgroundsImages[
+                        _random.Next(0, availableBackgroundsImages.Count - 1)
+                    ];
+                    _currentFishingBackgroundItems.Add(
+                        new BackgroundImage(
+                            new Vector2(
+                                _graphics.PreferredBackBufferWidth
+                                    - _random.Next(0, _graphics.PreferredBackBufferWidth),
+                                _random.Next(_graphics.PreferredBackBufferHeight)
+                            ),
+                            Content,
+                            randomizedBackgroundImage
+                        )
+                    );
                 }
+                //..gör detsamma med powerups (alltså skapa powerups)
+                if (_random.Next(1, 1) == 20) // Chansen är 1/20 (5%) att en powerup dyker upp
+                {
+                    List<PowerUpData> possiblePowerUps = _gamePowerUps
+                        .Where(powerup => powerup.IsAvailableAt(_depth))
+                        .ToList();
+                    PowerUpData randomPowerUp = possiblePowerUps[
+                        _random.Next(0, possiblePowerUps.Count - 1)
+                    ];
+                    Debug.WriteLine("Spawnar en powerup...");
+                    currentPowerUps.Add( // Skapa en ny powerup och lägg till den i listan
+                        new PowerUp(
+                            new Vector2(
+                                _graphics.PreferredBackBufferWidth,
+                                _graphics.PreferredBackBufferHeight
+                                    - _random.Next(
+                                        (int)_fishingRod.Position.Y
+                                            + (int)_fishingRod.AssociatedAsset.Height,
+                                        _graphics.PreferredBackBufferHeight
+                                    )
+                            ),
+                            randomPowerUp,
+                            Content
+                        )
+                    );
+                }
+
+                // Rita ut bakgrundsbildsinnehåll
+                List<BackgroundImage> _tempCurrentBackgroundImages = new List<BackgroundImage>(
+                    _currentFishingBackgroundItems
+                );
+                foreach (BackgroundImage image in _currentFishingBackgroundItems)
+                {
+                    Vector2 nextPos = image.getNextPos(
+                        _graphics.PreferredBackBufferHeight,
+                        _graphics.PreferredBackBufferWidth,
+                        0,
+                        0
+                    );
+                    if (image.Position.X == -1) // Negativa koordinater - bakgrundsbilden ska gömmas från skärmen
+                    {
+                        _tempCurrentBackgroundImages.Remove(image);
+                    }
+                    else
+                    {
+                        _spriteBatch.Draw(image.AssociatedAsset, nextPos, Color.White);
+                    }
+                }
+                _currentFishingBackgroundItems = _tempCurrentBackgroundImages; // Uppdatera från temporär lista
+
                 // Rita ut alla fiskar och powerups
                 List<Fish> _tempCurrentFishies = new List<Fish>(_currentFishies);
                 foreach (Fish fish in _currentFishies)
@@ -537,7 +605,7 @@ namespace FishGame
                 }
                 _currentFishies = _tempCurrentFishies; // Uppdatera lista från temporär lista
 
-                List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>(currentPowerUps);
+                List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>();
                 foreach (PowerUp powerUp in currentPowerUps)
                 {
                     // Hantera kollision med powerupen
@@ -557,8 +625,6 @@ namespace FishGame
                 }
                 currentPowerUps = _tempCurrentPowerUps; // Uppdatera lista från temporär lista
 
-                // Rita ut bakgrundsbilder
-                foreach (BackgroundImage image in _current) { }
                 // Rita ut kroken/metspöet/fiskespöet
                 _spriteBatch.Draw(
                     _fishingRod.AssociatedAsset,

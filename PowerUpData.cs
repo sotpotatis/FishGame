@@ -11,9 +11,10 @@ namespace FishGame
             string associatedAssetName,
             int rarity,
             int activeFor,
+            float speed,
             PowerUpTypes type,
             double multiplier,
-            int minDepth = 0
+            int? minDepth = null
         )
         {
             Name = name;
@@ -23,6 +24,7 @@ namespace FishGame
             MinDepth = minDepth;
             Multiplier = multiplier;
             Type = type;
+            Speed = speed;
         }
 
         // Innehåller data relaterat till en powerup.
@@ -30,8 +32,9 @@ namespace FishGame
         public string AssociatedAssetName { get; }
         public int Rarity { get; } // Hur sällan denna powerup spawnas
         public int ActiveFor { get; } // Hur länge denna powerup är aktiv
-        public int MinDepth { get; } // Det minsta djupet som powerupen spawnas på.
+        public int? MinDepth { get; } // Det minsta djupet som powerupen spawnas på.
         public double Multiplier { get; private set; } // Vad värden ska multipliceras med när powerupen är aktiv
+        public float Speed { get; } // Bashastigheten som powerupen rör sig med på skärmen
 
         // KORT OM POWERUP-TYPER:
         // -Sömnpiller: får fiskarna att åka långsammare
@@ -49,5 +52,22 @@ namespace FishGame
         }
 
         public PowerUpTypes Type { get; set; }
+
+        /// <summary>
+        /// Kontrollerar om powerupen finns tillgänglig vid det efterfrågade djupet.
+        /// </summary>
+        /// <param name="depth">Djupet som man ska kontrollera.</param>
+        /// <returns></returns>
+        public bool IsAvailableAt(float depth)
+        {
+            if (MinDepth == null || depth >= MinDepth)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }

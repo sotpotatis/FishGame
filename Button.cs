@@ -79,11 +79,13 @@ namespace FishGame
                 }
                 else
                 {
-                    if (_buttonHoverSound.State != SoundState.Playing && _previousButtonState != ButtonStates.Hovered)
+                    if (
+                        _buttonHoverSound.State != SoundState.Playing
+                        && _previousButtonState != ButtonStates.Hovered
+                    )
                     {
                         _buttonHoverSound.Play();
                     }
-
                     _previousButtonState = ButtonStates.Hovered;
                 }
             }
@@ -91,7 +93,7 @@ namespace FishGame
             {
                 _previousButtonState = ButtonStates.Idle;
             }
-            return _previousButtonState; 
+            return _previousButtonState;
         }
 
         /// <summary>
