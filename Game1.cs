@@ -30,6 +30,7 @@ namespace FishGame
         List<BackgroundImage> _currentFishingBackgroundItems = new List<BackgroundImage>(); // Saker i bakgrunden som visas när man fiskar
         List<FishData> _gameFishies; // Fiskar som är möjligt att spawna
         List<BackgroundImageData> _fishingBackgroundItems; // Namn på de olika bakgrundsföremålen som kan flyta runt på skärmen.
+        List<BackgroundImage> _activeBackgroundImages; // Aktiva bakgrundsbilder i spelet.
         List<PowerUpData> _gamePowerUps; // Möjliga powerups att spawna
         Fisherman _fisherman; // Objektet knutet till spelets fiskar
         FishingRod _fishingRod; // Objektet knutet till fiskespöet
@@ -121,13 +122,14 @@ namespace FishGame
                 ),
             };
             // Nedan följer detsamma, fast för powerups
-            _gamePowerUps = new List<PowerUpData>[]
+            _gamePowerUps = new List<PowerUpData>()
             {
                 new PowerUpData(
                     name: "Silver sömnpiller",
                     associatedAssetName: "placeholder",
                     type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
+                    multiplier: 0.2,
                     activeFor: 30
                 ),
                 new PowerUpData(
@@ -511,11 +513,11 @@ namespace FishGame
                 ;
                 // Skapa också föremål i bakgrunden för att skapa en levande bakgrund
                 int backgroundImagesToCreate = 15 - _currentFishingBackgroundItems.Count;
-                List<BackgroundImageData> availableBackgroundsImages = _fishingBackgroundItems.Where(
-                   )
+                List<BackgroundImageData> availableBackgroundsImages = _fishingBackgroundItems.Where(backgroundImage => backgroundImage.IsAvailableAt(_depth)).ToList();
                 for (int i = 0; i < backgroundImagesToCreate; i++)
                 {
-                    _fishingBackgroundItems.Add(new BackgroundImage());
+                    BackgroundImageData randomizedBackgroundImage = availableBackgroundsImages[_random.Next(0, availableBackgroundsImages.Count - 1)];
+                    _currentFishingBackgroundItems.Add(new BackgroundImage(new Vector2(_graphics.PreferredBackBufferWidth,_random.Next(_graphics.PreferredBackBufferHeight)), Content, randomizedBackgroundImage));
                 }
                 // Rita ut alla fiskar och powerups
                 List<Fish> _tempCurrentFishies = new List<Fish>(_currentFishies);
@@ -555,6 +557,8 @@ namespace FishGame
                 }
                 currentPowerUps = _tempCurrentPowerUps; // Uppdatera lista från temporär lista
 
+                // Rita ut bakgrundsbilder
+                foreach (BackgroundImage image in _current) { }
                 // Rita ut kroken/metspöet/fiskespöet
                 _spriteBatch.Draw(
                     _fishingRod.AssociatedAsset,

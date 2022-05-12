@@ -10,7 +10,7 @@ namespace FishGame
             string name,
             string associatedAssetName,
             int rarity,
-            double defaultSpeed,
+            float defaultSpeed,
             int minDepth = 0,
             int? maxDepth = null
         )

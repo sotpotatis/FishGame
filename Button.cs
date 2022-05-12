@@ -30,7 +30,7 @@ namespace FishGame
             Clicked
         }
 
-        private ButtonState _previousButtonState { get; set; }
+        private ButtonStates _previousButtonState { get; set; }
 
         public Button(
             string baseAssociatedAssetName,
@@ -75,22 +75,23 @@ namespace FishGame
                     {
                         _buttonClickSound.Play();
                     }
-                    return ButtonStates.Clicked;
+                    _previousButtonState = ButtonStates.Clicked;
                 }
                 else
                 {
-                    if (_buttonHoverSound.State != SoundState.Playing)
+                    if (_buttonHoverSound.State != SoundState.Playing && _previousButtonState != ButtonStates.Hovered)
                     {
                         _buttonHoverSound.Play();
                     }
 
-                    return ButtonStates.Hovered;
+                    _previousButtonState = ButtonStates.Hovered;
                 }
             }
             else
             {
-                return ButtonStates.Idle;
+                _previousButtonState = ButtonStates.Idle;
             }
+            return _previousButtonState; 
         }
 
         /// <summary>
