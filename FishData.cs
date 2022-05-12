@@ -39,7 +39,6 @@ namespace FishGame
         public bool IsAvailableAt(double depth)
         {
             // Vissa fiskar finns bara tillgängliga vid ett visst djup. Denna funktion returnerar om fisken finns tillgänglig vid djupet eller inte
-            Debug.WriteLine($"{depth} är djupet, min {MinSpawnDepth}, max {MaxSpawnDepth}");
             if (depth >= MinSpawnDepth && (MaxSpawnDepth == null || depth <= MaxSpawnDepth))
             {
                 return true;

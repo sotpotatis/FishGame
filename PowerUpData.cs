@@ -4,7 +4,7 @@ using System.Text;
 
 namespace FishGame
 {
-    struct PowerUpData
+    class PowerUpData
     {
         public PowerUpData(
             string name,

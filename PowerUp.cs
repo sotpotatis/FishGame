@@ -66,5 +66,14 @@ namespace FishGame
                 PowerUpActivatedAt = currentGameTimeSeconds;
             }
         }
+
+        /// <summary>
+        /// Sätter variabeln PreviousValue.
+        /// </summary>
+        /// <param name="previousValue">Värdet.</param>
+        public void savePreviousValue(double previousValue)
+        {
+            PreviousValue = previousValue;
+        }
     }
 }

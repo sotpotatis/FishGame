@@ -27,9 +27,12 @@ namespace FishGame
         List<Fish> _currentFishies = new List<Fish>(); // Lista med de nuvarande inladdade fiskarna i spelet
         List<PowerUp> currentPowerUps = new List<PowerUp>(); // Lista med de nuvarande inladdade (fångbara) powerupsen i spelet
         List<PowerUp> currentActivatedPowerUps = new List<PowerUp>(); // Lista med de nuvarande aktiva (fångade) powerupsen i spelen
-        List<FishData> _gameFishies;
-        Fisherman _fisherman;
-        FishingRod _fishingRod;
+        List<BackgroundImage> _currentFishingBackgroundItems = new List<BackgroundImage>(); // Saker i bakgrunden som visas när man fiskar
+        List<FishData> _gameFishies; // Fiskar som är möjligt att spawna
+        List<BackgroundImageData> _fishingBackgroundItems; // Namn på de olika bakgrundsföremålen som kan flyta runt på skärmen.
+        List<PowerUpData> _gamePowerUps; // Möjliga powerups att spawna
+        Fisherman _fisherman; // Objektet knutet till spelets fiskar
+        FishingRod _fishingRod; // Objektet knutet till fiskespöet
         int _score; // Användarens aktuella poäng
         float _depth; // Hur djupt fiskespöet har gått.
         int _maxDepth; // Hur djupt användaren max kan gå ner
@@ -45,6 +48,7 @@ namespace FishGame
         double fishMultiplier = 1;
         double cooldownMultiplier = 1;
         double depthMultiplier = 1;
+        double speedMultiplier = 1;
 
         // Övrigt
         Random _random = new Random();
@@ -117,7 +121,7 @@ namespace FishGame
                 ),
             };
             // Nedan följer detsamma, fast för powerups
-            PowerUpData[] _gamePowerUps = new PowerUpData[]
+            _gamePowerUps = new List<PowerUpData>[]
             {
                 new PowerUpData(
                     name: "Silver sömnpiller",
@@ -131,10 +135,17 @@ namespace FishGame
                     associatedAssetName: "placeholder",
                     type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
+                    multiplier: 0.5,
                     activeFor: 30,
                     minDepth: 20
                 )
             };
+
+            _fishingBackgroundItems = new List<BackgroundImageData> { new BackgroundImageData("vattenbubbla", "placeholder-150", 1, 10),
+            new BackgroundImageData("Sjögräs #1", "placeholder-150", 1, 5),
+            new BackgroundImageData("Sjögräs #2", "placeholder-150", 1, 5),
+            new BackgroundImageData("Sjögräs #3", "placeholder-150", 1, 5)};
+
             // Initiera också fiskaren
             _fisherman = new Fisherman();
             // ... fiskespöet...
@@ -343,17 +354,65 @@ namespace FishGame
                     if (!powerUp.IsActivated && powerUp.HasBeenCollidedWith) // Om powerupen har kolliderats med av fiskespöet men inte aktiverats så vill vi ju aktivera den. Det gör vi här!
                     {
                         powerUp.activatePowerUp(gameTime.TotalGameTime.TotalSeconds);
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill)
+                        {
+                            powerUp.savePreviousValue(speedMultiplier);
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.Healer)
+                        {
+                            powerUp.savePreviousValue(cooldownMultiplier);
+                        }
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.FishMultiplier)
+                        {
+                            powerUp.savePreviousValue(fishMultiplier);
+                        }
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.ScoreMultiplier)
+                        {
+                            powerUp.savePreviousValue(scoreMultiplier);
+                        }
                     }
                     if (powerUp.CheckPowerUpStillActive(gameTime.TotalGameTime.TotalSeconds)) // Kontrollera om powerupen fortfarande är aktiverad.
                     {
                         // Isåfall, se till att spelet uppdateras så att man drar fördel av powerupsen
                         // Information: Se klassen "PowerUpData" för mer information om powerups :))
-                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill) { }
-                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.Healer) { }
-                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.FishMultiplier) { }
-                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.ScoreMultiplier) { }
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill)
+                        {
+                            speedMultiplier = speedMultiplier + powerUp.Data.Multiplier;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.Healer)
+                        {
+                            cooldownMultiplier = cooldownMultiplier + powerUp.Data.Multiplier;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.FishMultiplier)
+                        {
+                            fishMultiplier = fishMultiplier + powerUp.Data.Multiplier;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.ScoreMultiplier)
+                        {
+                            scoreMultiplier = scoreMultiplier + powerUp.Data.Multiplier;
+                        }
                     }
-                    else { }
+                    else
+                    {
+                        // Återställ spelets status när powerups blir inaktiva
+                        // Information: Se klassen "PowerUpData" för mer information om powerups :))
+                        if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill)
+                        {
+                            speedMultiplier = powerUp.PreviousValue;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.Healer)
+                        {
+                            cooldownMultiplier = powerUp.PreviousValue;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.FishMultiplier)
+                        {
+                            fishMultiplier = powerUp.PreviousValue;
+                        }
+                        else if (powerUp.Data.Type == PowerUpData.PowerUpTypes.ScoreMultiplier)
+                        {
+                            scoreMultiplier = powerUp.PreviousValue;
+                        }
+                    }
                 }
             }
             base.Update(gameTime);
@@ -421,7 +480,7 @@ namespace FishGame
                 // Generera bakgrundsfärg baserat på djup
                 Color currentBackgroundColor = Color.DarkBlue; //new Color(new Vector3(143, 180, 255));
                 GraphicsDevice.Clear(currentBackgroundColor);
-                // Rita ut fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
+                // Skapa fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
                 // Kontrollera vilka fiskar som är möjliga för det djupet vi har
                 List<FishData> _possibleFishes = _gameFishies
                     .Where(fish => fish.IsAvailableAt(getDepthInMetres()))
@@ -450,6 +509,14 @@ namespace FishGame
                     _currentFishies.Add(newFish);
                 }
                 ;
+                // Skapa också föremål i bakgrunden för att skapa en levande bakgrund
+                int backgroundImagesToCreate = 15 - _currentFishingBackgroundItems.Count;
+                List<BackgroundImageData> availableBackgroundsImages = _fishingBackgroundItems.Where(
+                   )
+                for (int i = 0; i < backgroundImagesToCreate; i++)
+                {
+                    _fishingBackgroundItems.Add(new BackgroundImage());
+                }
                 // Rita ut alla fiskar och powerups
                 List<Fish> _tempCurrentFishies = new List<Fish>(_currentFishies);
                 foreach (Fish fish in _currentFishies)
@@ -509,6 +576,29 @@ namespace FishGame
                     new Vector2(_graphics.PreferredBackBufferWidth - 150, 50),
                     Color.White
                 );
+
+                // Skriv ut gränsen till nästa djup
+                _spriteBatch.DrawString(
+                    _mainFont,
+                    $"Till nästa nivå: -- poäng",
+                    new Vector2(_graphics.PreferredBackBufferWidth - 150, 75),
+                    Color.White
+                );
+
+                // Om fiskespöet är nära maxdjupet, rita ut en text
+                Vector2 lockedStringTextSize = _mainFont.MeasureString("---LÅST--");
+                if (_graphics.PreferredBackBufferHeight - _depth <= lockedStringTextSize.Y)
+                { //(_depth-variabeln är i antal pixlar)
+                    _spriteBatch.DrawString(
+                        _mainFont,
+                        $"---LÅST---",
+                        new Vector2(
+                            _graphics.PreferredBackBufferWidth - (lockedStringTextSize.X / 2),
+                            _graphics.PreferredBackBufferHeight - (lockedStringTextSize.Y / 2)
+                        ),
+                        Color.White
+                    );
+                }
             }
 
             _spriteBatch.End();
