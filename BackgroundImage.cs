@@ -12,14 +12,14 @@ namespace FishGame
         // Representerar ett bakgrundsföremål.
         public BackgroundImage(
             Vector2 position,
-            ContentManager contentLoader,
+            Texture2D associatedAsset,
             BackgroundImageData data
         )
         {
             Position = position;
             Speed = data.DefaultSpeed;
             IsFish = true;
-            AssociatedAsset = contentLoader.Load<Texture2D>(data.AssociatedAssetName);
+            AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = false;
         }
     }

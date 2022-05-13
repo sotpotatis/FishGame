@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -101,18 +102,28 @@ namespace FishGame
         public void CheckAndHandleCollisionWithFishingRod(
             FishingRod fishingRod,
             float depth,
-            GraphicsDeviceManager _graphics
+            GraphicsDeviceManager _graphics,
+            KeyboardState keyboardState
         )
         {
             if (
-                fishingRod.HasBeenCollidedWith == false
+                keyboardState.IsKeyDown(Keys.Space)
+                && fishingRod.HasBeenCollidedWith == false
                 && getAssociatedRectangle().Intersects(fishingRod.getAssociatedRectangle())
             ) // Tillåt endast kollisioner när fiskespöet är redo.
             {
                 Debug.WriteLine("Vi har en kollison mellan en sak och ett metspö.");
                 MarkAsCollidedWith(); // Markera kollision
                 fishingRod.MarkAsCollidedWith();
-                fishingRod.CollidedItem = this; // Ställ in kolliderat föremål
+                if (this is Fish)
+                {
+                    Debug.WriteLine("Here");
+                }
+                else
+                {
+                    Debug.WriteLine("Here 2");
+                }
+                fishingRod.collideWith(this); // Ställ in kolliderat föremål
             }
             ;
             // Uppdatera plats för saken som kolliderat med fiskespöet

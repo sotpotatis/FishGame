@@ -19,7 +19,7 @@ namespace FishGame
         public PowerUp(
             Vector2 position,
             PowerUpData data,
-            ContentManager contentLoader,
+            Texture2D associatedAsset,
             bool hasBeenCollidedWith = false
         )
         {
@@ -28,7 +28,7 @@ namespace FishGame
             Position = position;
             Speed = data.Speed;
             IsFish = false;
-            AssociatedAsset = contentLoader.Load<Texture2D>(data.AssociatedAssetName);
+            AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = hasBeenCollidedWith;
             IsActivated = false;
             PowerUpActivatedAt = 0;

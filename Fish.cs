@@ -15,7 +15,7 @@ namespace FishGame
         public Fish(
             Vector2 position,
             FishData data,
-            ContentManager contentLoader,
+            Texture2D associatedAsset,
             bool hasBeenCollidedWith = false
         )
         {
@@ -24,7 +24,7 @@ namespace FishGame
             Position = position;
             Speed = data.DefaultSpeed;
             IsFish = true;
-            AssociatedAsset = contentLoader.Load<Texture2D>(data.AssociatedAssetName);
+            AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = hasBeenCollidedWith;
         }
     }

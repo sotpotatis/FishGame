@@ -58,7 +58,7 @@ namespace FishGame
         /// </summary>
         /// <param name="depth">Djupet som man ska kontrollera.</param>
         /// <returns></returns>
-        public bool IsAvailableAt(float depth)
+        public bool IsAvailableAt(double depth)
         {
             if (MinDepth == null || depth >= MinDepth)
             {

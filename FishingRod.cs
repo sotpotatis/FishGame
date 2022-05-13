@@ -29,15 +29,25 @@ namespace FishGame
         }
 
         public int SpeedX { get; }
-        public MovingItem CollidedItem { get; set; }
+        public MovingItem CollidedItem { get; private set; }
 
+        /// <summary>
+        /// Ställ in vad fiskespöet har kolliderats med
+        /// </summary>
+        /// <param name="collidedItem">Det som fiskespöet koliderat med.</param>
+        public void collideWith(MovingItem collidedItem)
+        {
+            CollidedItem = collidedItem;
+        }
+
+        public int CollidedItemPoints { get; private set; } // Hur mycket "saken" som fisken kolliderar med är värd i poäng.
         public int Cooldown { get; set; }
 
         /// <summary>
-        /// Hämtar nästa position som fiskespöet ska befinna sig på. Fiskespöet ska fungera lite annorlunda
+        /// Hämtar nästa position som fiskespöet ska befinna sig på. Fiskespöet ska fungera lite annorlunda än exempelvis andra MovingItem
         /// </summary>
-        /// <param name="depth"></param>
-        /// <returns></returns>
+        /// <param name="depth">Djupet som fiskespöet just nu befinner sig på.</param>
+        /// <returns>Fiskespöets nästa position</returns>
         public override Vector2 getNextPos(
             int screenWidth,
             int screenHeight,
