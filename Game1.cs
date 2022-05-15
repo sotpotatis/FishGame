@@ -35,8 +35,10 @@ namespace FishGame
         Fisherman _fisherman; // Objektet knutet till spelets fiskar
         FishingRod _fishingRod; // Objektet knutet till fiskespöet
         int _score; // Användarens aktuella poäng
+        int _scoreUntilNextDepth; // Poäng som krävs till nästa djup ska låsas upp
         float _depth; // Hur djupt fiskespöet har gått.
         int _maxDepth; // Hur djupt användaren max kan gå ner
+        int _currentLevel; // Användarens aktuella nivå
 
         // Texturer
         private Texture2D _fishermanImage;
@@ -46,6 +48,8 @@ namespace FishGame
         private SpriteFont _mainFontSmall;
         private Texture2D _instructionImage;
         private Texture2D fishSilhouette;
+        private Texture2D _gameLogo;
+        private Texture2D _hourGlassImage;
         private Dictionary<string, Texture2D> _fishImages = new Dictionary<string, Texture2D>();
         private Dictionary<string, Texture2D> _powerUpImages = new Dictionary<string, Texture2D>();
         private Dictionary<string, Texture2D> _fishingBackgroundItems =
@@ -57,6 +61,7 @@ namespace FishGame
         double cooldownMultiplier = 1;
         double depthMultiplier = 1;
         double speedMultiplier = 1;
+        int _fishCountTarget = 5;
 
         // Övrigt
         Random _random = new Random();
@@ -68,10 +73,10 @@ namespace FishGame
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
-            // _graphics.IsFullScreen = true; // Specificera att spelet ska köras i fullskärm
+            _graphics.IsFullScreen = false; // Specificera att spelet ska köras i fullskärm
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            _state = GameState.FishCatchingScreen;
+            _state = GameState.TitleScreen;
         }
 
         protected override void Initialize()
@@ -81,7 +86,7 @@ namespace FishGame
             {
                 new FishData(
                     name: "Blå Fisk",
-                    associatedAssetName: "blue_fishie",
+                    associatedAssetName: "blue_fishie_big",
                     rarity: 1,
                     value: 1,
                     defaultSpeed: 5,
@@ -89,60 +94,60 @@ namespace FishGame
                 ),
                 new FishData(
                     name: "Grön Fisk",
-                    associatedAssetName: "green_fishie",
+                    associatedAssetName: "green_fishie_big",
                     rarity: 1,
                     value: 1,
-                    defaultSpeed: 5,
-                    minSpawnDepth: 0
+                    defaultSpeed: 6,
+                    minSpawnDepth: 8
                 ),
                 new FishData(
                     name: "Röd Fisk",
-                    associatedAssetName: "red_fishie",
+                    associatedAssetName: "red_fishie_big",
                     rarity: 1,
                     value: 1,
-                    defaultSpeed: 5,
-                    minSpawnDepth: 0
+                    defaultSpeed: 7,
+                    minSpawnDepth: 16
                 ),
                 new FishData(
                     name: "Stor Fisk",
-                    associatedAssetName: "big_fishie",
+                    associatedAssetName: "big_fishie_big",
                     rarity: 2,
                     value: 10,
                     defaultSpeed: 8,
-                    minSpawnDepth: 10
+                    minSpawnDepth: 24
                 ),
                 new FishData(
                     name: "Lila Fisk",
-                    associatedAssetName: "purple_blurple",
+                    associatedAssetName: "purple_blurple_big",
                     rarity: 2,
                     value: 3,
                     defaultSpeed: 10,
-                    minSpawnDepth: 0
+                    minSpawnDepth: 30
                 ),
                 new FishData(
                     name: "Guldig Sällsynt Fisk",
-                    associatedAssetName: "golden_fancy_fish",
+                    associatedAssetName: "golden_fancy_fish_big",
                     rarity: 5,
                     value: 20,
                     defaultSpeed: 20,
-                    minSpawnDepth: 0
+                    minSpawnDepth: 36
                 ),
             };
             // Nedan följer detsamma, fast för powerups
             _gamePowerUps = new List<PowerUpData>()
             {
                 new PowerUpData(
-                    name: "Silver sömnpiller",
-                    associatedAssetName: "clock-silver",
-                    type: PowerUpData.PowerUpTypes.SleepPill,
+                    name: "Silvrig nedsaktare",
+                    associatedAssetName: "clock-silver-2",
+                    type: PowerUpData.PowerUpTypes.ScoreMultiplier,
                     rarity: 10,
                     multiplier: 0.2,
                     activeFor: 30,
                     speed: 1
                 ),
                 new PowerUpData(
-                    name: "Guldigt sömnpiller",
-                    associatedAssetName: "clock-silver",
+                    name: "Guldig nedsaktare",
+                    associatedAssetName: "clock-silver-2",
                     type: PowerUpData.PowerUpTypes.SleepPill,
                     rarity: 10,
                     multiplier: 0.5,
@@ -174,28 +179,31 @@ namespace FishGame
             //...lite knappar i spelet...
             // Knappstorlek: 128x64. Därmed kan vi ta fram positionen för att centrera knapparna
             Vector2 buttonCenterPosition = new Vector2(
-                (_graphics.PreferredBackBufferWidth / 2) - 64,
-                (_graphics.PreferredBackBufferHeight / 2) - 32
+                (_graphics.PreferredBackBufferWidth / 2) - 64 * 2,
+                (_graphics.PreferredBackBufferHeight / 2) - 32 * 2 + 25
             );
-            _gameButtons = new Dictionary<string, Button>()
+            _gameButtons = new Dictionary<string, Button>() // Notera: knappstorleken är konstant: 128x64
             {
                 ["play"] = new Button(
                     "button-start",
                     Content,
                     new Vector2(buttonCenterPosition.X, buttonCenterPosition.Y),
-                    GameState.TitleScreen
+                    GameState.TitleScreen,
+                    2
                 ),
                 ["help"] = new Button(
                     "button-help",
                     Content,
-                    new Vector2(buttonCenterPosition.X, buttonCenterPosition.Y + 74), // Knappstorlek: 128x64
-                    GameState.TitleScreen
+                    new Vector2(buttonCenterPosition.X, buttonCenterPosition.Y + 120),
+                    GameState.TitleScreen,
+                    2
                 ),
             };
             //...och ställ in djupet samt andra variabler
             _depth = 0;
             _score = 0;
-            _maxDepth = 500;
+            _scoreUntilNextDepth = 10;
+            _maxDepth = _graphics.PreferredBackBufferHeight;
             _timeSinceLastAnimation = 0;
             base.Initialize();
         }
@@ -219,9 +227,14 @@ namespace FishGame
             // Ladda in instruktionsbilder
             _instructionImage = Content.Load<Texture2D>("idle-screen-instruction");
 
-            // Ladda in fisksiluett
-            fishSilhouette = Content.Load<Texture2D>("placeholder-150"); //("fish_silhouette");
+            // Ladda in logotyp
+            _gameLogo = Content.Load<Texture2D>("fishy-logo");
 
+            // Ladda in fisksiluett
+            fishSilhouette = Content.Load<Texture2D>("fish_silhouette");
+
+            // Ladda in ikoner
+            _hourGlassImage = Content.Load<Texture2D>("hourglass");
             // Ladda in alla bilder för fiskar
             Dictionary<string, Texture2D> test = new Dictionary<string, Texture2D>();
             foreach (FishData fish in _gameFishies)
@@ -254,7 +267,7 @@ namespace FishGame
             }
 
             MouseState _mouseState = Mouse.GetState();
-            // Uppdatera alla knappars bilder baserade på om musen är över de eller inte (detta händer endast i minnet, relevanta knappar ritas ut under Draw)
+            // Uppdatera alla knappars bilder baserade på om muspekaren är över de eller inte (detta händer endast i minnet, relevanta knappar ritas ut under Draw)
             Dictionary<string, Button> _tempGameButtons = new Dictionary<string, Button>(
                 _gameButtons
             ); // Skapa temporär dictionary
@@ -346,7 +359,7 @@ namespace FishGame
                     }
                     else if (Keyboard.GetState().IsKeyDown(Keys.Left))
                     { // Flytta metspöet åt vänster om vi kan det
-                        if (_fishingRod.Position.X - _fishingRod.AssociatedAsset.Width >= 0)
+                        if (_fishingRod.Position.X >= 0)
                         {
                             _fishingRod.Position = new Vector2(
                                 _fishingRod.Position.X - _fishingRod.SpeedX,
@@ -392,10 +405,15 @@ namespace FishGame
                     }
                 }
                 // Hantera powerups. Se till att de som ska vara aktiverade är det.
+                bool resetPowerUps = false;
                 foreach (PowerUp powerUp in currentActivatedPowerUps)
                 {
+                    Debug.WriteLine(
+                        $"Kriterier: {powerUp.IsActivated}, {powerUp.HasBeenCollidedWith}"
+                    );
                     if (!powerUp.IsActivated && powerUp.HasBeenCollidedWith) // Om powerupen har kolliderats med av fiskespöet men inte aktiverats så vill vi ju aktivera den. Det gör vi här!
                     {
+                        Debug.WriteLine($"Aktiverar en powerup av typen {powerUp.Data.Type}...");
                         powerUp.activatePowerUp(gameTime.TotalGameTime.TotalSeconds);
                         if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill)
                         {
@@ -439,6 +457,8 @@ namespace FishGame
                     {
                         // Återställ spelets status när powerups blir inaktiva
                         // Information: Se klassen "PowerUpData" för mer information om powerups :))
+                        Debug.WriteLine("Återställer powerup...");
+                        resetPowerUps = true;
                         if (powerUp.Data.Type == PowerUpData.PowerUpTypes.SleepPill)
                         {
                             speedMultiplier = powerUp.PreviousValue;
@@ -457,6 +477,19 @@ namespace FishGame
                         }
                     }
                 }
+                if (resetPowerUps) // Rensa listor om så ska göras
+                {
+                    currentActivatedPowerUps.Clear();
+                    currentPowerUps.Clear();
+                }
+                // Hantera upplåsning av ny nivå
+                if (_score > _scoreUntilNextDepth)
+                {
+                    Debug.WriteLine("Ny nivå ska låsas upp!");
+                    _maxDepth = (int)Math.Round(_maxDepth * 2 * depthMultiplier); // Öka maxdjupet med 2 ggr
+                    _scoreUntilNextDepth = (int)Math.Round(_scoreUntilNextDepth * 2.0); // Öka gräns för nästa level med 2 ggr.
+                    _currentLevel += 1;
+                }
             }
             base.Update(gameTime);
         }
@@ -470,15 +503,18 @@ namespace FishGame
             {
                 if (button.ActiveOnScreen == _state)
                 { //Om knappen ska visas på den aktuella skärmen, rita ut den
-                    _spriteBatch.Draw(button.ActiveAsset, button.Position, Color.White);
+                    drawScaled(button.ActiveAsset, button.Position, 2);
                 }
             }
             if (_state == GameState.TitleScreen)
             {
                 // Kod för titelskärmen
                 // Rita ut de objekt som ska vara på titelskärmen
-
-
+                drawScaled(
+                    _gameLogo,
+                    new Vector2(_graphics.PreferredBackBufferWidth / 2 - _gameLogo.Width * 2, 0),
+                    4
+                );
             }
             else if (_state == GameState.IdleScreen)
             {
@@ -520,14 +556,14 @@ namespace FishGame
                 // Generera bakgrundsfärg baserat på djup
                 Color currentBackgroundColor = Color.DarkBlue; //new Color(new Vector3(143, 180, 255));
                 GraphicsDevice.Clear(currentBackgroundColor);
-                // Skapa fiskar. Målet är att ha 15 fiskar som visas på skärmen samtidigt.
+                // Skapa fiskar. Målet är att ha 5 fiskar (normalt) som visas på skärmen samtidigt.
                 // Kontrollera vilka fiskar som är möjliga för det djupet vi har
                 double depthInMetres = getDepthInMetres(); // Konvertera pixlar till meter
                 List<FishData> _possibleFishes = _gameFishies
                     .Where(fish => fish.IsAvailableAt(depthInMetres))
                     .ToList();
                 Debug.WriteLine($"{_possibleFishes.Count} fiskar tillgängliga");
-                int fishesToCreate = 15 - _currentFishies.Count;
+                int fishesToCreate = _fishCountTarget - _currentFishies.Count;
                 for (int i = 0; i < fishesToCreate; i++)
                 {
                     Debug.WriteLine($"Skapar en ny fisk... ({i + 1}/{fishesToCreate})");
@@ -565,7 +601,11 @@ namespace FishGame
                     );
                 }
                 //..gör detsamma med powerups (alltså skapa powerups)
-                if (_random.Next(1, 1) == 20) // Chansen är 1/20 (5%) att en powerup dyker upp
+                if (
+                    currentActivatedPowerUps.Count == 0
+                    && currentPowerUps.Count == 0
+                    && _random.Next(1, 20) == 1
+                ) // Chansen är 1/20 (5%) att en powerup dyker upp. Även endast en powerup kan vara aktiv och fångbar åt gången
                 {
                     List<PowerUpData> possiblePowerUps = _gamePowerUps
                         .Where(powerup => powerup.IsAvailableAt(depthInMetres))
@@ -617,6 +657,24 @@ namespace FishGame
                         _graphics,
                         Keyboard.GetState()
                     );
+                    /*Avkommentera för plats-debugging Rectangle fishRectangle = fish.getAssociatedRectangle();
+                    Rectangle fishRectangle2 = new Rectangle(
+                        (int)fish.Position.X,
+                        (int)fish.Position.X,
+                        fish.AssociatedAsset.Width + 5,
+                        fish.AssociatedAsset.Height + 5
+                    );
+
+                    Texture2D rectangleTexture = new Texture2D(
+                        GraphicsDevice,
+                        fishRectangle2.Width,
+                        fishRectangle2.Height
+                    );
+                    _spriteBatch.Draw(
+                        Content.Load<Texture2D>("placeholder-150"),
+                        fishRectangle2,
+                        Color.Black
+                    ); */
 
                     if (fish.Position.X == -1) // Negativa koordinater - fisken ska gömmas från skärmen
                     {
@@ -629,7 +687,7 @@ namespace FishGame
                 }
                 _currentFishies = _tempCurrentFishies; // Uppdatera lista från temporär lista
 
-                List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>();
+                List<PowerUp> _tempCurrentPowerUps = new List<PowerUp>(currentPowerUps);
                 foreach (PowerUp powerUp in currentPowerUps)
                 {
                     // Hantera kollision med powerupen
@@ -639,12 +697,14 @@ namespace FishGame
                         _graphics,
                         Keyboard.GetState()
                     );
-                    if (powerUp.HasBeenCollidedWith && !currentActivatedPowerUps.Contains(powerUp)) // Lägg till powerupen i listan med powerups när den har aktiveras
+                    if (powerUp.HasBeenCollidedWith && currentActivatedPowerUps.Count == 0)
                     {
+                        Debug.WriteLine("Kollision med powerup skedde nyss!");
                         currentActivatedPowerUps.Add(powerUp);
                     }
                     if (powerUp.Position.X == -1) // Negativa koordinater - powerupen ska gömmas från skärmen
                     {
+                        Debug.WriteLine("Tar bort en powerup från skärmen...");
                         _tempCurrentPowerUps.Remove(powerUp);
                     }
                     else
@@ -657,10 +717,15 @@ namespace FishGame
                 // Rita ut kroken/metspöet/fiskespöet
                 _spriteBatch.Draw(
                     _fishingRod.AssociatedAsset,
-                    _fishingRod.getNextPos(0, 0, 0, 0),
+                    _fishingRod.getNextPos(0, 0, 0, 0), // (0,0,0,0) eftersom variablerna overrideas och inte gör någonting, se funktionen
                     Color.White
                 );
 
+                // Om fiskespöet är på "cooldown", rita ut en bild som indikerar det
+                if (_fishingRod.HasBeenCollidedWith)
+                {
+                    _spriteBatch.Draw(_hourGlassImage, new Vector2(0, 0), Color.White);
+                }
                 // Rita ut text som visar aktuellt djup, poäng, etc
                 double _depthInMetres = getDepthInMetres();
                 _spriteBatch.DrawString(
@@ -676,11 +741,15 @@ namespace FishGame
                     Color.White
                 );
 
-                // Skriv ut gränsen till nästa djup
+                // Skriv ut gränsen till nästa djup "nivå".
+                string pointText = $"Nivågräns: {_scoreUntilNextDepth} poäng";
                 _spriteBatch.DrawString(
                     _mainFont,
-                    $"Till nästa nivå: -- poäng",
-                    new Vector2(_graphics.PreferredBackBufferWidth - 300, 75),
+                    pointText,
+                    new Vector2(
+                        _graphics.PreferredBackBufferWidth - _mainFont.MeasureString(pointText).X,
+                        75
+                    ),
                     Color.White
                 );
 
@@ -695,16 +764,27 @@ namespace FishGame
                         _mainFont,
                         $"---LÅST---",
                         new Vector2(
-                            _graphics.PreferredBackBufferWidth - (lockedStringTextSize.X / 2),
-                            _graphics.PreferredBackBufferHeight - (lockedStringTextSize.Y / 2)
+                            (_graphics.PreferredBackBufferWidth - lockedStringTextSize.X) / 2,
+                            _graphics.PreferredBackBufferHeight - lockedStringTextSize.Y
                         ),
                         Color.White
                     );
                 }
 
                 // Rita ut en lista med de fiskar som man har låst upp.
-                float yOffset = 80;
+                float yOffset = 100;
                 int xOffset = 100; // Denna är konstant
+                Vector2 unlockedFishesTextSize = _mainFont.MeasureString("Upplåsta fiskar:");
+                _spriteBatch.DrawString(
+                    _mainFontSmall,
+                    "Upplåsta fiskar:",
+                    new Vector2(
+                        _graphics.PreferredBackBufferWidth - unlockedFishesTextSize.X,
+                        yOffset
+                    ),
+                    Color.White
+                );
+                yOffset += unlockedFishesTextSize.Y + 5;
                 foreach (FishData fish in _gameFishies)
                 {
                     Texture2D fishAsset; // Bilden som ska ritas ut.
@@ -719,20 +799,56 @@ namespace FishGame
                         fishAsset = fishSilhouette;
                         fishText = "???";
                     }
+                    Vector2 fishTextSize = _mainFont.MeasureString(fishText);
                     Vector2 fishAssetPosition = new Vector2(
-                        _graphics.PreferredBackBufferWidth - fishAsset.Width - xOffset,
+                        _graphics.PreferredBackBufferWidth - fishAsset.Width / 2 - xOffset,
                         yOffset
                     ); // Positionen för bilden på fisken/fisk-siluetten
-                    //drawScaled(fishAsset, fishAssetPosition, 0.5f);
-                    _spriteBatch.Draw(fishAsset, fishAssetPosition, Color.White);
-
+                    // Rita ut siluett
+                    drawScaled(fishAsset, fishAssetPosition, 0.5f);
+                    // Rita ut fiskens namn
                     _spriteBatch.DrawString(
                         _mainFontSmall,
                         fishText,
-                        new Vector2(_graphics.PreferredBackBufferWidth - xOffset, yOffset),
+                        new Vector2(
+                            _graphics.PreferredBackBufferWidth - xOffset,
+                            yOffset + fishTextSize.Y / 2
+                        ),
                         Color.White
                     );
-                    yOffset += _mainFont.MeasureString(fishText).Y + 5;
+                    yOffset += fishTextSize.Y + 5;
+                }
+                yOffset += 10;
+                // Rita ut aktiva powerups
+                foreach (PowerUp activePowerUp in currentActivatedPowerUps)
+                {
+                    string powerUpActiveUntilText = activePowerUp.GetActiveUntilText(
+                        gameTime.TotalGameTime.TotalSeconds
+                    ); // Hämta en text som skriver ut hur länge powerupen är aktiv
+                    Vector2 powerUpActiveUntilTextSize = _mainFont.MeasureString(
+                        powerUpActiveUntilText
+                    ); // Hämta storlek på texten
+                    _spriteBatch.DrawString(
+                        _mainFont,
+                        powerUpActiveUntilText,
+                        new Vector2(
+                            _graphics.PreferredBackBufferWidth - powerUpActiveUntilTextSize.X - 10,
+                            yOffset + activePowerUp.AssociatedAsset.Width / 4
+                        ),
+                        Color.White
+                    ); // Skriv ut tid som det är kvar på powerupen
+                    drawScaled(
+                        activePowerUp.AssociatedAsset,
+                        new Vector2(
+                            _graphics.PreferredBackBufferWidth
+                                - activePowerUp.AssociatedAsset.Width / 2
+                                - powerUpActiveUntilTextSize.X
+                                - 10,
+                            yOffset
+                        ),
+                        0.5f
+                    );
+                    yOffset += powerUpActiveUntilTextSize.Y + 5;
                 }
             }
 
@@ -780,16 +896,19 @@ namespace FishGame
         /// I spelet ska det skapas ett flertal objekt som ska börja strax under fiskespöet på varje nivå.
         /// För att skapa dessa objekt så skapar vi en funktion som returnerar denna slumpvis position
         /// </summary>
-        /// <returns></returns>
+        /// <returns>En slumpvis startposition som en Vector2.</returns>
         public Vector2 generateRandomStartPosition()
         {
             return new Vector2(
-                _graphics.PreferredBackBufferWidth,
+                _graphics.PreferredBackBufferWidth
+                    - _random.Next(0, _graphics.PreferredBackBufferWidth / 8),
                 _graphics.PreferredBackBufferHeight
                     - _random.Next(
-                        (int)_fishingRod.Position.Y + (int)_fishingRod.AssociatedAsset.Height, // (int)_fishingRod.AssociatedAsset.Height / 2
+                        0,
                         _graphics.PreferredBackBufferHeight
-                    )
+                            - (int)_fishingRod.AssociatedAsset.Height
+                            - (int)_fishingRod.Position.Y
+                    ) // Se till att de nya föremålen hamnar under fiskespöets krok
             );
         }
     }

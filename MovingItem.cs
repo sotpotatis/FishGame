@@ -33,7 +33,7 @@ namespace FishGame
             );
             if (!HasBeenCollidedWith)
             { // Inte kolliderad med - fortsätt röra sig tills vi når kanten
-                if (Position.X - AssociatedAsset.Width <= 0)
+                if (Position.X + AssociatedAsset.Width <= 0)
                 { // Om vi har nått kanten/gränsen på skärmen
                     Debug.WriteLine("X-gräns har nåtts");
                     Position = new Vector2(-1, -1); // (koden kommer hantera den negativa positionen och radera föremålet)
@@ -72,7 +72,7 @@ namespace FishGame
                 (int)Position.Y,
                 AssociatedAsset.Width,
                 AssociatedAsset.Height
-            ); // Returnera en rektangel
+            ); // Returnera en rektangel runt föremålet
         }
 
         /// <summary>
@@ -106,24 +106,21 @@ namespace FishGame
             KeyboardState keyboardState
         )
         {
+            Debug.WriteLine(
+                $"Kriterier: {!fishingRod.HasBeenCollidedWith}, {keyboardState.IsKeyDown(Keys.Space)}, {getAssociatedRectangle().Intersects(fishingRod.getAssociatedRectangle())}"
+            );
+            bool collidedThisTimeAround = false;
             if (
-                keyboardState.IsKeyDown(Keys.Space)
-                && fishingRod.HasBeenCollidedWith == false
+                !fishingRod.HasBeenCollidedWith
+                && keyboardState.IsKeyDown(Keys.Space)
                 && getAssociatedRectangle().Intersects(fishingRod.getAssociatedRectangle())
             ) // Tillåt endast kollisioner när fiskespöet är redo.
             {
                 Debug.WriteLine("Vi har en kollison mellan en sak och ett metspö.");
-                MarkAsCollidedWith(); // Markera kollision
-                fishingRod.MarkAsCollidedWith();
-                if (this is Fish)
-                {
-                    Debug.WriteLine("Here");
-                }
-                else
-                {
-                    Debug.WriteLine("Here 2");
-                }
+                HasBeenCollidedWith = true; // Markera kollision för föremålet
+                fishingRod.MarkAsCollidedWith(); // Markera kollision med fiskespöet
                 fishingRod.collideWith(this); // Ställ in kolliderat föremål
+                collidedThisTimeAround = true;
             }
             ;
             // Uppdatera plats för saken som kolliderat med fiskespöet
@@ -133,7 +130,7 @@ namespace FishGame
                 depth,
                 fishingRod.Speed
             );
-            if (Position.X == -1) // Ny position har negativa koordindater - föremålet ska gömmas från skärmen
+            if (Position.X == -1 && !collidedThisTimeAround) // Ny position har negativa koordindater - föremålet ska gömmas från skärmen
             {
                 HasBeenCollidedWith = false;
             }

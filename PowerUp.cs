@@ -53,6 +53,26 @@ namespace FishGame
         }
 
         /// <summary>
+        /// Hämtar en text som berättar hur lång tid det är kvar tills en powerup avaktiveras.
+        /// </summary>
+        /// <param name="currentGameTimeSeconds">Den aktuella speltiden, dvs. hur många sekunder av spelet som har passerat.</param>
+        /// <returns></returns>
+        public string GetActiveUntilText(double currentGameTimeSeconds)
+        {
+            int activeMinutesRemaining = 0;
+            int secondsDifference = (int)Math.Floor(
+                PowerUpActivatedAt + Data.ActiveFor - currentGameTimeSeconds
+            ); // Hämta sekunder kvar tills powerupen avaktiveras.
+            int activeSecondsRemaining = secondsDifference;
+            if (secondsDifference > 60) // Om det är mer än 60 sekunder tills powerupen inaktiveras --> ändra texten
+            {
+                activeMinutesRemaining = (int)Math.Floor(currentGameTimeSeconds / 60);
+                activeSecondsRemaining = activeSecondsRemaining - activeMinutesRemaining * 60;
+            }
+            return $"{activeMinutesRemaining.ToString().PadLeft(2, '0')}:{activeSecondsRemaining.ToString().PadLeft(2, '0')}";
+        }
+
+        /// <summary>
         /// Aktiverar en powerup om det går att aktivera den.
         /// </summary>
         /// <param name="currentGameTimeSeconds">Den aktuella tiden som har passerat sedan spelet startades</param>

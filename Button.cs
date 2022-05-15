@@ -19,6 +19,7 @@ namespace FishGame
 
         public GameState ActiveOnScreen { get; set; } // Vilken skärm (titelskärmen, spelskärmen, etc.) som knappen finns tillgänglig på
         public Texture2D ActiveAsset { get; set; } // Den aktiva texturen som knappen visar
+        public int Scale { get; set; } // Vilken skala knappen ritas ut i
 
         private SoundEffectInstance _buttonClickSound { get; set; } // Ljud när knapp klickas på
         private SoundEffectInstance _buttonHoverSound { get; set; } // Ljud när knapp hålls över
@@ -36,7 +37,8 @@ namespace FishGame
             string baseAssociatedAssetName,
             ContentManager contentLoader,
             Vector2 position,
-            GameState activeOnScreen
+            GameState activeOnScreen,
+            int scale = 1
         )
         {
             AssociatedAssets = new Tuple<Texture2D, Texture2D>(
@@ -44,6 +46,7 @@ namespace FishGame
                 contentLoader.Load<Texture2D>(baseAssociatedAssetName + "-hovered")
             ); // Hämta bilder till knappen
             ActiveAsset = AssociatedAssets.Item1;
+            Scale = scale;
             Position = position;
             ActiveOnScreen = activeOnScreen;
             // Ljud när knapp klickas på respektive hålls över
@@ -61,9 +64,9 @@ namespace FishGame
         {
             if (
                 mouseState.X >= Position.X
-                && mouseState.X <= Position.X + ActiveAsset.Width
+                && mouseState.X <= Position.X + ActiveAsset.Width * Scale
                 && mouseState.Y >= Position.Y
-                && mouseState.Y <= Position.Y + ActiveAsset.Height
+                && mouseState.Y <= Position.Y + ActiveAsset.Height * Scale
             ) // Muspekaren hålls vid knappen
             {
                 if (
