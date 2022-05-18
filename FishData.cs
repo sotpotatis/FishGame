@@ -12,8 +12,8 @@ namespace FishGame
             string associatedAssetName,
             int rarity,
             int value,
-            int defaultSpeed,
-            int minSpawnDepth,
+            float defaultSpeed,
+            int minSpawnDepth = 0,
             int? maxSpawnDepth = null
         )
         {
@@ -29,10 +29,10 @@ namespace FishGame
         // Representerar data om en fisk i spelet.
         private int Rarity { get; set; } // Hur sällsynt fisken är
         public int Value { get; set; } // Hur mycket fisken är värd i spelvaluta
-        public string Name { get; } // Vad fisken heter
+        public string Name { get; } // Vad fisken heter (läsbart för spelaren)
         public string AssociatedAssetName { get; } // Namnet på bilden som hör till fisken
 
-        public int DefaultSpeed { get; set; } // Fiskens standardhastighet
+        public float DefaultSpeed { get; set; } // Fiskens standardhastighet
         public float MinSpawnDepth { get; set; } // Det minsta djupet där fisken "spawnas" på.
         public float? MaxSpawnDepth { get; set; } // Maxdjupet där fisken "spawnas" på.
 

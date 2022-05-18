@@ -9,11 +9,12 @@ namespace FishGame
 {
     class BackgroundImage : MovingItem
     {
-        // Representerar ett bakgrundsföremål.
+        // Representerar ett bakgrundsföremål som rör sig i bakgrunden på skärmen.
         public BackgroundImage(
             Vector2 position,
             Texture2D associatedAsset,
-            BackgroundImageData data
+            BackgroundImageData data,
+            float spawnedAtDepth
         )
         {
             Position = position;
@@ -21,6 +22,7 @@ namespace FishGame
             IsFish = true;
             AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = false;
+            _lastDepth = spawnedAtDepth;
         }
     }
 }

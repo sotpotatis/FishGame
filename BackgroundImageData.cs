@@ -24,12 +24,11 @@ namespace FishGame
         }
 
         // Innehåller data relaterat till en bakgrundsbild. Den rör sig i bakgrunden så det är inte så mycket man behöver ha koll på.
-        public string Name { get; }
-        public string AssociatedAssetName { get; }
+        public string Name { get; } // Föremålets läsbara namn
+        public string AssociatedAssetName { get; } // Namnet på föremålets associerade bild
         public int MinDepth { get; } // Det minsta djupet som bilden spawnas på.
         public int? MaxDepth { get; } // Det maximala djupet som bilden spawnas på.
         public float DefaultSpeed { get; } // Standardhastigheten som föremålet har
-
         public double Rarity { get; private set; } // Hur sällan denna bild ritas ut.
 
         public bool IsAvailableAt(double depth)

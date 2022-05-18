@@ -20,6 +20,7 @@ namespace FishGame
             Vector2 position,
             PowerUpData data,
             Texture2D associatedAsset,
+            float spawnedAtDepth,
             bool hasBeenCollidedWith = false
         )
         {
@@ -31,6 +32,7 @@ namespace FishGame
             AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = hasBeenCollidedWith;
             IsActivated = false;
+            _lastDepth = spawnedAtDepth;
             PowerUpActivatedAt = 0;
         }
 

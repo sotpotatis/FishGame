@@ -73,6 +73,30 @@
 /processorParam:TextureFormat=Color
 /build:bubble_small.png
 
+#begin button-back.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:button-back.png
+
+#begin button-back-hovered.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:button-back-hovered.png
+
 #begin button-click.ogg
 /importer:OggImporter
 /processor:SoundEffectProcessor
@@ -133,6 +157,18 @@
 /processorParam:TextureFormat=Color
 /build:button-start-hovered.png
 
+#begin clock-gold.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:clock-gold.png
+
 #begin clock-silver.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -157,6 +193,30 @@
 /processorParam:TextureFormat=Color
 /build:clock-silver-2.png
 
+#begin clock-silver-3.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:clock-silver-3.png
+
+#begin depth-multiplier.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:depth-multiplier.png
+
 #begin fish_silhouette.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -168,6 +228,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:fish_silhouette.png
+
+#begin fish-amount-multiplier-2x.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:fish-amount-multiplier-2x.png
 
 #begin fisherman.png
 /importer:TextureImporter
@@ -253,6 +325,18 @@
 /processorParam:TextureFormat=Color
 /build:fisherman-5.png
 
+#begin fishing-rod-healing.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:fishing-rod-healing.png
+
 #begin fishing-rod-placeholder.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -264,6 +348,30 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:fishing-rod-placeholder.png
+
+#begin fishy-instructions-1.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:fishy-instructions-1.png
+
+#begin fishy-instructions-2.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:fishy-instructions-2.png
 
 #begin fishy-logo.png
 /importer:TextureImporter
@@ -363,6 +471,18 @@
 /processorParam:TextureFormat=Compressed
 /build:mainFontSmall.spritefont
 
+#begin multiplier-2x.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:multiplier-2x.png
+
 #begin placeholder-150.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -422,6 +542,13 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:red_fishie_big.png
+
+#begin titleFont.spritefont
+/importer:FontDescriptionImporter
+/processor:LocalizedFontProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:titleFont.spritefont
 
 #begin water-bubble.png
 /importer:TextureImporter

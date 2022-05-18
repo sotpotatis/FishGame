@@ -38,7 +38,7 @@ namespace FishGame
 
         // KORT OM POWERUP-TYPER:
         // -Sömnpiller: får fiskarna att åka långsammare
-        // -Healer: gör så att ditt fiskespö
+        // -Healer: gör så att du inte behöver vänta så länge på att ditt fiskespö "omladdas"
         // -Dykare: ger dig möjlighet att komma ner på ett lägre djup under en viss tid
         // -Stimmultiplikator: gör så att fler fiskar "spawnas" på skärmen
         // -Pengamultiplikator: gör så att du får fler poäng per sekund

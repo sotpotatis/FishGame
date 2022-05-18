@@ -9,13 +9,14 @@ namespace FishGame
 {
     class Fish : MovingItem
     {
-        // Representerar en fisk. Till skillnad från FishData så innehåller även denna klass de variabler som krävs för att personligt identifiera en fisk.
+        // Representerar en fisk. Till skillnad från FishData så innehåller även denna klass de variabler som krävs för att personligt identifiera en individuell fisk som ett rörligt objekt på skärmen.
         public FishData Data { get; set; } // Data om fisken
 
         public Fish(
             Vector2 position,
             FishData data,
             Texture2D associatedAsset,
+            float spawnedAtDepth,
             bool hasBeenCollidedWith = false
         )
         {
@@ -26,6 +27,7 @@ namespace FishGame
             IsFish = true;
             AssociatedAsset = associatedAsset;
             HasBeenCollidedWith = hasBeenCollidedWith;
+            _lastDepth = spawnedAtDepth;
         }
     }
 }

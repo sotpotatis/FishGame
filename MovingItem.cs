@@ -16,7 +16,7 @@ namespace FishGame
         public bool HasBeenCollidedWith { get; protected set; } // Om föremålet har blivit krockat med eller inte
         public bool IsFish { get; protected set; } // Om föremålet är en fisk eller inte
 
-        private float _lastDepth { get; set; } = 0; // Det senaste djupet som föremålet befann sig på. Detta används för att hämta nästa position.
+        protected float _lastDepth { get; set; } = 0; // Det senaste djupet som föremålet befann sig på. Detta används för att hämta nästa position.
         public Texture2D AssociatedAsset { get; set; } // Texturen som associeras med objektet som rör sig
 
         public virtual Vector2 getNextPos(
@@ -42,6 +42,7 @@ namespace FishGame
                 { // Om vi inte har nått kanten på skärmen
                     Debug.WriteLine("X-gräns har inte nåtts");
                     Position = new Vector2(Position.X - Speed, Position.Y - (depth - _lastDepth));
+                    Debug.WriteLine($"Position för föremålet uppdaterades till: {Position}");
                 }
             }
             else

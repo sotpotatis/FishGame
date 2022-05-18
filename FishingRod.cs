@@ -9,7 +9,7 @@ namespace FishGame
 {
     class FishingRod : MovingItem
     {
-        // Definierar ett fiskespö i spelet
+        // Definierar fiskespöet i spelet
         public FishingRod(
             Vector2 position,
             int speed,
@@ -21,15 +21,15 @@ namespace FishGame
         {
             Position = position;
             Speed = speed;
-            SpeedX = speedX; // Hastighet i X-led.
+            SpeedX = speedX;
             Cooldown = cooldown;
             AssociatedAsset = contentLoader.Load<Texture2D>(associatedAssetName);
             IsFish = false;
             HasBeenCollidedWith = false;
         }
 
-        public int SpeedX { get; }
-        public MovingItem CollidedItem { get; private set; }
+        public int SpeedX { get; } // Fiskespöets hastighet i X-led.
+        public MovingItem CollidedItem { get; private set; } // Det föremål som fiskespöet kolliderat med.
 
         /// <summary>
         /// Ställ in vad fiskespöet har kolliderats med
