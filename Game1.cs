@@ -12,7 +12,8 @@ Jag vill bara lägga till här att det står i instruktionerna att man ska kunna
 
 Om du tittar i koden nedan så finns det några möjliga vidareutvecklingar:
 1. Den första är till och med inlagd men inte implementerad. Det är att fiskarna har olika "raritet", dvs. att vissa fiskar dyker upp oftare än andra.
-Detsamma gäller powerups och bakgrundsföremål. Detta finns implementerat i Data-klasserna för dessa, men själva värdet används inte för någonting
+Detsamma gäller powerups och bakgrundsföremål. Detta finns implementerat i Data-klasserna för dessa, men själva värdet används inte för någonting.
+Att olika fiskar ger olika antal poäng är inte heller implementerat.
 2. Den andra är mer innehåll. En sak som inte är inlagd än är fler "skins" för fiskespöet med olika egenskaper.
 3. Den tredje är att spelet ska kunna fungera i fullskärm. Detta är i princip fullt möjligt idag, förutom att knappar och instruktionskärmen använder en relativ
 positionering som gör att det ser lite skumt ut i fullskärm.
@@ -658,9 +659,7 @@ namespace FishGame
                 for (int i = 0; i < fishesToCreate; i++)
                 {
                     Debug.WriteLine($"Skapar en ny fisk... ({i + 1}/{fishesToCreate})");
-                    FishData newFishData = _possibleFishes[
-                        _random.Next(0, _possibleFishes.Count - 1)
-                    ];
+                    FishData newFishData = _possibleFishes[_random.Next(0, _possibleFishes.Count)];
                     Debug.WriteLine($"Den nya fisken är en {newFishData.Name}.");
                     Fish newFish = new Fish(
                         generateRandomStartPosition(), // Börja på en slumpvis höjd
