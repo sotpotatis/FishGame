@@ -260,6 +260,7 @@ namespace FishGame
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            Window.Title = "Fishy av 20alse";
             // Ladda in typsnitt
             _mainFont = Content.Load<SpriteFont>("mainFont");
             _mainFontSmall = Content.Load<SpriteFont>("mainFontSmall");
@@ -678,7 +679,7 @@ namespace FishGame
                 for (int i = 0; i < backgroundImagesToCreate; i++)
                 {
                     BackgroundImageData randomizedBackgroundImage = availableBackgroundsImages[
-                        _random.Next(0, availableBackgroundsImages.Count - 1)
+                        _random.Next(0, availableBackgroundsImages.Count)
                     ];
                     _currentFishingBackgroundItems.Add(
                         new BackgroundImage(
@@ -706,7 +707,7 @@ namespace FishGame
                         .Where(powerup => powerup.IsAvailableAt(depthInMetres))
                         .ToList();
                     PowerUpData randomPowerUp = possiblePowerUps[
-                        _random.Next(0, possiblePowerUps.Count - 1)
+                        _random.Next(0, possiblePowerUps.Count)
                     ];
                     Debug.WriteLine("Spawnar en powerup...");
                     _currentPowerUps.Add( // Skapa en ny powerup och lägg till den i listan
